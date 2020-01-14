@@ -1,0 +1,6 @@
+gensim
+tqdm
+regex
+spacy
+torch
+matplotlib
