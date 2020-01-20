@@ -3,7 +3,7 @@ from collections import defaultdict
 from gensim.models import LsiModel, TfidfModel
 from gensim.corpora import Dictionary
 from configs import LSIConfig
-from tokenizers.tokenizers import SpacyTokenizer, TransformerGPT2Tokenizer
+from topical_tokenizers import SpacyTokenizer, TransformerGPT2Tokenizer
 from datasets.topical_dataset import TopicalDataset
 import pickle
 

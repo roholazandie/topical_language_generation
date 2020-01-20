@@ -1,22 +1,34 @@
-from tokenizers.tokenization_gpt2 import GPT2Tokenizer
+from topical_tokenizers import GPT2Tokenizer
 from gensim.models import LdaModel
-from gensim.corpora import Dictionary
+from gensim.corpora import Dictionary, MmCorpus
+from gensim.utils import ClippedCorpus
 import numpy as np
 from datasets.wikidata import WikiData
 import pickle
 
-cached_dir = "/home/rohola/cached_models"
-model_name_or_path = "gpt2" #50257 tokens
-tokenizer_class = GPT2Tokenizer
-tokenizer = tokenizer_class.from_pretrained(model_name_or_path, cache_dir=cached_dir)
+# cached_dir = "/home/rohola/cached_models"
+# model_name_or_path = "gpt2" #50257 tokens
+# tokenizer_class = GPT2Tokenizer
+# tokenizer = tokenizer_class.from_pretrained(model_name_or_path, cache_dir=cached_dir)
+#
+# dirname = "/media/rohola/data/clean_wiki_text_json/"
+# wiki = WikiData(dirname)
+#
+# doc_stream = (tokens for tokens in wiki)
+# id2word_wiki = Dictionary(doc_stream)
+# id2word = id2word_wiki.filter_extremes(no_below=20, no_above=0.1)
 
-dirname = "/media/rohola/data/clean_wiki_text_json/"
-wiki = WikiData(dirname)
+dirname = "/media/rohola/data/clean_wiki_text_json"
+wikidata = WikiData(dirname)
 
-doc_stream = (tokens for tokens in wiki)
+doc_stream = (tokens for tokens in wikidata)
 id2word_wiki = Dictionary(doc_stream)
-id2word = id2word_wiki.filter_extremes(no_below=20, no_above=0.1)
+id2word_wiki.filter_extremes(no_below=20, no_above=0.1)
 
+
+
+mm_corpus = MmCorpus('/home/rohola/codes/topical_language_generation/caches/wiki_bow.mm')
+clipped_corpus = ClippedCorpus(mm_corpus, 4000)
 
 
 ######################################

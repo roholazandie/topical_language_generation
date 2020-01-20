@@ -9,6 +9,9 @@ class Tokenizer:
     def __init__(self):
         pass
 
+    def tokenize(self):
+        raise NotImplemented()
+
     def encode(self, text):
         raise NotImplemented()
 
@@ -56,15 +59,32 @@ class TransformerGPT2Tokenizer(Tokenizer):
         super().__init__()
         model_name_or_path = "gpt2"  # 50257 tokens
         tokenizer_class = GPT2TokenizerFast
+        #tokenizer_class = GPT2Tokenizer
         self.tokenizer = tokenizer_class.from_pretrained(model_name_or_path, cache_dir=cached_dir)
 
     @property
     def dictionary(self):
+        #return self.tokenizer.__dict__
         return self.tokenizer.decoder
 
-    def encode(self, text):
+    def tokenize(self, text):
         # return self.tokenizer.encode(text, add_special_tokens=False)
         return self.tokenizer.tokenize(text)
 
+    def decode(self, id):
+        return self.tokenizer.decode(id)
+
+    def encode(self, text):
+        return self.tokenizer.encode(text)
+
     def save_dict(self):
         pass
+
+
+if __name__ == "__main__":
+    tokenizer = TransformerGPT2Tokenizer(cached_dir="/home/rohola/codes/topical_language_generation/caches/")
+    tokens = tokenizer.tokenize("this is a test")
+    ids = tokenizer.encode("this is a test")
+    print(ids)
+    token = tokenizer.decode(ids)
+    print(token)

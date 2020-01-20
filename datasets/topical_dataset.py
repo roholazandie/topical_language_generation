@@ -3,14 +3,14 @@ import json
 from topical_tokenizers import TransformerGPT2Tokenizer
 
 
-class TopicalDataset():
+class TopicalDataset:
 
     def __init__(self, dirname, tokenizer):
         self.tokenizer = tokenizer
         self.dirname = dirname
 
     def _process_text(self, text):
-        token_ids = self.tokenizer.encode(text)
+        token_ids = self.tokenizer.tokenize(text)
         return token_ids
 
     def __iter__(self):

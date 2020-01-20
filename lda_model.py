@@ -81,10 +81,10 @@ class LDAModel:
         if type(self.tokenizer) == TransformerGPT2Tokenizer:
             if not os.path.isfile(psi_matrix_file):
                 self._start()
-                psi_matrix = np.zeros((self.config.num_topics, len(self.tokenizer.dictionary)))
-                matrix = self.model.get_topics()  # a matrix of k x V (num_topic x vocab_size)
-                for i in range(len(self.dictionary)):
-                    j = self.tokenizer.tokenizer.encoder[self.id2word[i]]
+                psi_matrix = np.zeros((self.config.num_topics, self.tokenizer.tokenizer.vocab_size))
+                matrix = self.model.get_topics()  # a matrix of k x V' (num_topic x selected_vocab_size)
+                for i in range(len(self.id2word)):
+                    j = self.tokenizer.tokenizer.convert_tokens_to_ids(self.id2word[i])
                     psi_matrix[:, j] = matrix[:, i]
 
                 pickle.dump(psi_matrix, open(psi_matrix_file, 'wb'))

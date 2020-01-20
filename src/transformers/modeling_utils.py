@@ -770,6 +770,10 @@ class PreTrainedModel(nn.Module):
         '''
         scores are probs here (sum(probs)=1), they could be anything tho
         '''
+        if method == "method0": #no topic
+            total_probs = F.softmax(logits, dim=-1)
+            return total_probs
+
         if method == "method1":
             alpha = 0.01
             token_probs = F.softmax(logits, dim=-1)
@@ -787,12 +791,56 @@ class PreTrainedModel(nn.Module):
 
             logits[index_candidate_tokens] = logits[index_candidate_tokens] + 100 * scores[index_candidate_tokens]
 
-            # scores = scores**5
-            # logscore = logits * scores
-            # logscore[np.isnan(logits * scores)] = -np.inf
+            #############
+            #this will sharpen the distribution
+            #F.softmax(torch.log(torch.Tensor([0.1, 0.4, 0.2, 0.3])) * 10)
+            ############################
             total_probs = F.softmax(torch.from_numpy(logits), dim=-1)
             return total_probs
 
+        elif method == "method3":
+            #prenorm
+            import matplotlib.pyplot as plt
+            #todo cut the scores based on probs(?)
+            print(logits[logits != -float("inf")].numpy().min())
+            #np.unique((F.softmax(torch.log(scores)).numpy()>0.01), return_counts=True)
+            #alpha = 7 #this is a good value
+            alpha = 1 #higher values of alpha corresponds to more on topic
+            LOGIT_THRESHOLD = -110 # smaller values of Threshold is more on topic
+            logscores = torch.log(scores)
+            indices = logits < LOGIT_THRESHOLD#todo cut logits relatively not absolutely
+
+
+            #logscores[logscores == -float("Inf")] = 0
+            logscores[indices] = logits[indices].double()
+            if all(logscores.numpy() == -float("inf")):
+                print("no logscore")
+                logscores = 0
+            else:
+                logscore2 = logscores
+                logscore2 = logscore2[logscore2 != -float("inf")]
+                plt.hist(logscore2, bins=100, color='y')
+                #plt.show()
+
+            total_probs = F.softmax(logits + alpha * logscores, dim=-1)
+            if any(torch.isnan(total_probs)):
+                total_probs = F.softmax(logits, dim=-1)
+
+            self.calculate_variance(total_probs)
+            return total_probs
+
+        elif method=="method4":
+            #postnorm
+            pass
+
+
+    def calculate_variance(self, total_probs):
+        CUM_PROB_THRESHOLD = 0.95
+        total_probs = total_probs.numpy()
+        index_first_occur = list(np.cumsum(np.sort(total_probs)[::-1]) > CUM_PROB_THRESHOLD).index(True)
+        index_candidate_tokens = np.argsort(total_probs)[::-1][:index_first_occur + 1]
+        candidate_probs = total_probs[index_candidate_tokens]
+        print("variance of probs ", np.var(candidate_probs))
 
     def _generate_topical2(
             self,
@@ -917,7 +965,7 @@ class PreTrainedModel(nn.Module):
         lda_model = LDAModel(lda_config_file)
         theta = lda_model.get_theta_matrix()
         psi = lda_model.get_psi_matrix()
-        dictionary = lda_model.tokenizer.dictionary
+        tokenizer = lda_model.tokenizer
         ###########################################################################
 
         # current position / max lengths / length of generated sentences / unfinished sentences
@@ -953,26 +1001,48 @@ class PreTrainedModel(nn.Module):
             token_probs = F.softmax(next_token_logits, dim=-1)
 
             ########################
-            pre_token_ids = (token_probs > 0.001).nonzero().flatten().tolist()
 
             # we should choose topics randomly with theta
-            topic_probs = torch.tensor(psi[0, :])  # zero'th topic
-            total_probs = self.fusion(next_token_logits.squeeze(0), topic_probs, method="method1")
+            topic_probs = torch.tensor(psi[4, :])  # zero'th topic
+            total_probs = self.fusion(next_token_logits.squeeze(0), topic_probs, method="method3")
 
-            post_token_ids = (total_probs > 0.001).nonzero().flatten().tolist()
+            # post_token_ids = (total_probs > 0.001).nonzero().flatten().tolist()
 
-            post_minus_pre = set(post_token_ids).difference(set(pre_token_ids))
-            post_minus_pre_tokens = " ".join([dictionary[j] for j in post_minus_pre])
-            print("post minus pre: ", post_minus_pre_tokens)
+            # pre_token_ids = (token_probs > 0.001).nonzero().flatten().tolist()
+            # post_minus_pre = set(post_token_ids).difference(set(pre_token_ids))
+            # post_minus_pre_tokens = " ".join([tokenizer.tokenizer.convert_ids_to_tokens(j) for j in post_minus_pre])
+            # print("post minus pre: ", post_minus_pre_tokens)
+            #
+            # pre_minus_post = set(pre_token_ids).difference(set(post_token_ids))
+            # pre_minus_post_tokens = " ".join([tokenizer.tokenizer.convert_ids_to_tokens(j) for j in pre_minus_post])
+            # print("pre minus post: ", pre_minus_post_tokens)
 
-            pre_minus_post = set(pre_token_ids).difference(set(post_token_ids))
-            pre_minus_post_tokens = " ".join([dictionary[j] for j in pre_minus_post])
-            print("pre minus post: ", pre_minus_post_tokens)
+            indices = np.where((token_probs[0, :] - total_probs) > 0.01)[0]
+            pre_post_token_probs = [(tokenizer.tokenizer.convert_ids_to_tokens(j),
+                  round(total_probs[j].item(), 4)) for j in indices.tolist()]
+            pre_post_token_probs = sorted(pre_post_token_probs, key=lambda x: x[1], reverse=True)
+            pre_minus_post = " ".join([str(x) for x in pre_post_token_probs])
+            print("pre_minus_post", pre_minus_post)
+
+
+            indices = np.where((total_probs - token_probs[0, :]) > 0.01)[0]
+
+            post_pre_token_probs = [(tokenizer.tokenizer.convert_ids_to_tokens(j),
+                  round(total_probs[j].item(), 4)) for j in indices.tolist()]
+            post_pre_token_probs = sorted(post_pre_token_probs, key=lambda x: x[1], reverse=True)
+            post_minus_pre = " ".join([str(x) for x in post_pre_token_probs])
+            print("post_minus_pre", post_minus_pre)
+
+
 
             # Sample
+            print(total_probs.min())
             next_token = torch.multinomial(total_probs, num_samples=1).squeeze(0)
 
-
+            print("next token: ", tokenizer.tokenizer.convert_ids_to_tokens([next_token]))
+            print("prob of generated token before fusion", token_probs[0, next_token.item()].item())
+            print("prob of generated token after fusion: ", total_probs[next_token.item()].item())
+            print("======================================================")
             # update generations and finished sentences
             tokens_to_add = next_token * unfinished_sents + pad_token_id * (1 - unfinished_sents)
             input_ids = torch.cat([input_ids, tokens_to_add.unsqueeze(-1)], dim=-1)

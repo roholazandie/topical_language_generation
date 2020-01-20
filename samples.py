@@ -16,7 +16,7 @@
 # from gensim.test.utils import datapath
 # from gensim.corpora import WikiCorpus
 #
-# path_to_wiki_dump = datapath("/home/rohola/codes/topic_modeling_language_generation/wikipedia/enwiki-latest-pages-articles.xml.bz2")
+# path_to_wiki_dump = datapath("/home/rohola/codes/topical_language_generation/wikipedia/enwiki-latest-pages-articles.xml.bz2")
 #
 # for vec in WikiCorpus(path_to_wiki_dump):
 #     print(vec)
@@ -44,45 +44,31 @@
 # psi = lda_model.get_psi_matrix()
 #
 # print(psi)
-from scipy.special import softmax
+
+import torch
+from torch.nn import functional as F
 import numpy as np
 import matplotlib.pyplot as plt
 
-# scores = [0.001, 0.01, 0.2, 0.9, 0.3, 0.2, 0.002, 0.004, 0.03]
-# p1 = softmax(scores)
-# y_pos = np.arange(len(scores))
-# plt.bar(y_pos, p1)
-# plt.show()
-#
-# k = np.power(scores, 2)
-# print(k)
-# p2 = softmax(k)
-# plt.bar(y_pos, p2)
-#
-# plt.show()
-#
-#
-# n = [-2,-3, -np.inf]
-#
-# a1 = softmax(n)
-# a2 = softmax(np.multiply(n, 2))
-# print(a1)
-# print(a2)
 
+dist1 = torch.from_numpy(np.array([0.1, 0.4, 0.2, 0.3]))
+dist2 = torch.from_numpy(np.array([0.1, 0.4, 0.2, 0.3]))
+#dist2 = torch.from_numpy(np.array([0.7, 0.0, 0.1, 0.2]))
 
-import multiprocessing as mp
+logits1 = torch.log(dist1)
+logits2 = torch.log(dist2)
 
-class Foo():
-    def ss(self):
-        pass
+#indices = logits2 == -float("Inf")
+indices = logits2 < -10e5
+logits2[indices] = logits1[indices]
 
-    @staticmethod
-    def work(self):
-        pass
+res1 = F.softmax(logits1)
+res2 = F.softmax((logits1+logits2)/2)
 
-if __name__ == '__main__':
-    pool = mp.Pool()
-    foo = Foo()
-    pool.apply_async(foo.work)
-    pool.close()
-    pool.join()
+plt.bar(np.arange(len(dist1)), res1)
+print(res1)
+plt.show()
+
+plt.bar(np.arange(len(dist1)), res2)
+print(res2)
+plt.show()
