@@ -164,23 +164,23 @@ if __name__ == "__main__":
     import time
 
     # t1 = time.time()
-    dirname = "/media/rohola/data/clean_wiki_text_json_test"
-    wikidata = WikiData(dirname)
-
-    doc_stream = (tokens for tokens in wikidata)
-    id2word_wiki = Dictionary()
-    id2word_wiki.filter_extremes(no_below=20, no_above=0.1)
-    id2word_wiki.save('/home/rohola/codes/topical_language_generation/caches/wiki_dict')
-
-    #id2word_wiki = id2word_wiki.load('/home/rohola/codes/topical_language_generation/caches/wiki_dict')
-
-
-    wiki_corpus = WikiCorpus(wikidata, id2word_wiki)
-    MmCorpus.serialize('/home/rohola/codes/topical_language_generation/caches/wiki_bow.mm', wiki_corpus)
+    # dirname = "/media/rohola/data/clean_wiki_text_json"
+    # wikidata = WikiData(dirname)
+    #
+    # doc_stream = (tokens for tokens in wikidata)
+    # id2word_wiki = Dictionary(doc_stream)
+    # id2word_wiki.filter_extremes(no_below=20, no_above=0.1)
+    # id2word_wiki.save('/home/rohola/codes/topical_language_generation/caches/wiki_dict')
+    #
+    # #id2word_wiki = id2word_wiki.load('/home/rohola/codes/topical_language_generation/caches/wiki_dict')
+    #
+    #
+    # wiki_corpus = WikiCorpus(wikidata, id2word_wiki)
+    # MmCorpus.serialize('/home/rohola/codes/topical_language_generation/caches/wiki_bow.mm', wiki_corpus)
 
     # t2 = time.time()
     # print(t2-t1)
 
-    # mm_corpus = MmCorpus('/home/rohola/codes/topical_language_generation/caches/wiki_bow.mm')
-    # print(mm_corpus)
-    # print(next(iter(mm_corpus)))
+    mm_corpus = MmCorpus('/home/rohola/codes/topical_language_generation/caches/wiki_bow.mm')
+    print(mm_corpus)
+    print(next(iter(mm_corpus)))

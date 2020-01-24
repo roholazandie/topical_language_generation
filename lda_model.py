@@ -35,6 +35,10 @@ class LDAModel:
         self.dictionary.filter_extremes(no_below=20, no_above=0.2)
         # Bag-of-words representation of the documents.
         self.corpus = [self.dictionary.doc2bow(doc) for doc in docs]
+
+        corpus_file = os.path.join(self.config.cached_dir, "corpus.p")
+        pickle.dump(self.corpus, open(corpus_file, 'wb'))
+
         temp = self.dictionary[0]  # This is only to "load" the dictionary.
         self.id2word = self.dictionary.id2token
 
@@ -51,6 +55,17 @@ class LDAModel:
             passes=self.config.passes,
             eval_every=self.config.eval_every
         )
+        model_file = os.path.join(self.config.cached_dir, "model.p")
+        self.model.save(model_file)
+
+
+    def get_model(self):
+        model_file = os.path.join(self.config.cached_dir, "model.p")
+        return LdaModel.load(model_file)
+
+    def get_corpus(self):
+        corpus_file = os.path.join(self.config.cached_dir, "corpus.p")
+        return pickle.load(open(corpus_file, 'rb'))
 
     def clear_cache(self):
         all_topic_tokens_file = os.path.join(self.config.cached_dir, "all_topic_tokens.p")

@@ -51,24 +51,37 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-dist1 = torch.from_numpy(np.array([0.1, 0.4, 0.2, 0.3]))
-dist2 = torch.from_numpy(np.array([0.1, 0.4, 0.2, 0.3]))
-#dist2 = torch.from_numpy(np.array([0.7, 0.0, 0.1, 0.2]))
+# dist1 = torch.from_numpy(np.array([0.1, 0.4, 0.2, 0.3]))
+# dist2 = torch.from_numpy(np.array([0.1, 0.4, 0.2, 0.3]))
+# #dist2 = torch.from_numpy(np.array([0.7, 0.0, 0.1, 0.2]))
+#
+# logits1 = torch.log(dist1)
+# logits2 = torch.log(dist2)
+#
+# #indices = logits2 == -float("Inf")
+# indices = logits2 < -10e5
+# logits2[indices] = logits1[indices]
+#
+# res1 = F.softmax(logits1)
+# res2 = F.softmax((logits1+logits2)/2)
+#
+# plt.bar(np.arange(len(dist1)), res1)
+# print(res1)
+# plt.show()
+#
+# plt.bar(np.arange(len(dist1)), res2)
+# print(res2)
+# plt.show()
 
-logits1 = torch.log(dist1)
-logits2 = torch.log(dist2)
 
-#indices = logits2 == -float("Inf")
-indices = logits2 < -10e5
-logits2[indices] = logits1[indices]
+probs = torch.Tensor([0.0, 0.5, 0.3, 0.2])
+scores = torch.Tensor([0.8, 0.0, 0.1, 0.1])
 
-res1 = F.softmax(logits1)
-res2 = F.softmax((logits1+logits2)/2)
+probs[scores>0.3] = 1.0
+scores[scores==0]=1
 
-plt.bar(np.arange(len(dist1)), res1)
-print(res1)
-plt.show()
+total_probs = F.softmax(torch.mul(probs, scores))
+print(total_probs)
 
-plt.bar(np.arange(len(dist1)), res2)
-print(res2)
-plt.show()
+total_probs = F.softmax(torch.add(probs, scores))
+print(total_probs)

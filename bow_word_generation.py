@@ -1,5 +1,6 @@
 from datasets.topical_dataset import TopicalDataset
-from tokenizers.tokenizers import SpacyTokenizer, TransformerGPT2Tokenizer
+
+from topical_tokenizers import TransformerGPT2Tokenizer, SpacyTokenizer
 from gensim.models import LdaModel
 from gensim.corpora import Dictionary
 from configs import LDAConfig
@@ -80,12 +81,15 @@ def doc_bow_generate(config, dataset, doc_id, original_dictionary):
 if __name__ == "__main__":
     config_file = "configs/alexa_lda_config.json"
     config = LDAConfig.from_json_file(config_file)
-    tokenizer = SpacyTokenizer(dict_dir=config.cached_dir)
-    #tokenizer = TransformerGPT2Tokenizer(cached_dir=config.cached_dir)
+    #tokenizer = SpacyTokenizer(dict_dir=config.cached_dir)
+    tokenizer = TransformerGPT2Tokenizer(cached_dir=config.cached_dir)
     topical_dataset = TopicalDataset(config.dataset_dir, tokenizer)
     topical_dataset = [doc for doc in topical_dataset]
     doc_id = 0
-    generated_doc = doc_bow_generate(config, doc_id=doc_id, dataset=topical_dataset, original_dictionary=tokenizer.dictionary)
+    generated_doc = doc_bow_generate(config,
+                                     doc_id=doc_id,
+                                     dataset=topical_dataset,
+                                     original_dictionary=tokenizer.dictionary)
 
     print(generated_doc)
     selected_doc = " ".join(topical_dataset[doc_id])

@@ -148,7 +148,7 @@ def adjust_length_to_model(length, max_sequence_length):
 
 
 def main():
-    config_file = "configs/generation_config.json"
+    config_file = "configs/generation_topical_config.json"
     config = TopicalGenerationConfig.from_json_file(config_file)
 
     config.n_gpu = torch.cuda.device_count()
@@ -187,6 +187,7 @@ def main():
     lda_model = LDAModel(lda_config_file)
     theta = lda_model.get_theta_matrix()
     psi = lda_model.get_psi_matrix()
+    #theta=None
 
     output_sequences = model.generate(
         input_ids=encoded_prompt,

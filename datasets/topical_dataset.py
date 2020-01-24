@@ -5,9 +5,10 @@ from topical_tokenizers import TransformerGPT2Tokenizer
 
 class TopicalDataset:
 
-    def __init__(self, dirname, tokenizer):
+    def __init__(self, dirname, tokenizer, do_tokenize=True):
         self.tokenizer = tokenizer
         self.dirname = dirname
+        self.do_tokenize = do_tokenize
 
     def _process_text(self, text):
         token_ids = self.tokenizer.tokenize(text)
@@ -30,28 +31,38 @@ class TopicalDataset:
                                 for k in knowledge[agent]:
                                     if k != "url":
                                         articles = knowledge[agent][k]
-                                        tokens = self._process_text(articles)
-                                        # yield list(dict(Counter(ids)).items())
-                                        yield tokens
+                                        if self.do_tokenize:
+                                            tokens = self._process_text(articles)
+                                            yield tokens
+                                        else:
+                                            yield articles
                             else:
                                 agent_knowledge = knowledge[agent]
                                 for agent_k in agent_knowledge:
                                     kk = agent_knowledge[agent_k]
                                     if "shortened_wiki_lead_section" in kk:
                                         shortened_wiki_lead_section = kk["shortened_wiki_lead_section"]
-                                        tokens = self._process_text(shortened_wiki_lead_section)
-                                        # yield list(dict(Counter(tokens)).items())
-                                        yield tokens
+                                        if self.do_tokenize:
+                                            tokens = self._process_text(shortened_wiki_lead_section)
+                                            yield tokens
+                                        else:
+                                            yield shortened_wiki_lead_section
+
                                     elif "summarized_wiki_lead_section" in kk:
                                         summarized_wiki_lead_section = kk["summarized_wiki_lead_section"]
-                                        tokens = self._process_text(summarized_wiki_lead_section)
-                                        # yield list(dict(Counter(tokens)).items())
-                                        yield tokens
+                                        if self.do_tokenize:
+                                            tokens = self._process_text(summarized_wiki_lead_section)
+                                            yield tokens
+                                        else:
+                                            yield summarized_wiki_lead_section
+
                                     elif "fun_facts" in kk:
                                         fun_facts = ' '.join([fun_fact for fun_fact in kk["fun_facts"]])
-                                        tokens = self._process_text(fun_facts)
-                                        # yield list(dict(Counter(tokens)).items())
-                                        yield tokens
+                                        if self.do_tokenize:
+                                            tokens = self._process_text(fun_facts)
+                                            yield tokens
+                                        else:
+                                            yield fun_facts
 
         self.tokenizer.save_dict()
 
@@ -60,6 +71,9 @@ if __name__ == "__main__":
     dirname = "/media/rohola/data/dialog_systems/alexa_prize_topical_chat_dataset/reading_sets/"
     cached_dir = "/home/rohola/cached_models"
     tokenizer = TransformerGPT2Tokenizer(cached_dir)
-    topical_dataset = TopicalDataset(dirname, tokenizer)
-    for i in topical_dataset:
-        print(i)
+    topical_dataset = TopicalDataset(dirname, tokenizer, do_tokenize=False)
+    j = 1500
+    for i, data in enumerate(topical_dataset):
+        if i == j:
+            print(data)
+            break
