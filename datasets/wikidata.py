@@ -5,6 +5,8 @@ import multiprocessing
 import os
 import json
 from collections import Counter
+from gensim.utils import ClippedCorpus
+from gensim.models import LdaModel
 
 from transformers import GPT2TokenizerFast
 from transformers import GPT2Tokenizer
@@ -20,11 +22,8 @@ ARTICLE_MIN_WORDS = 50
 
 class WikiData:
 
-    def __init__(self, dirname):
-        model_name_or_path = "gpt2"  # 50257 tokens
-        tokenizer_class = GPT2TokenizerFast
-        #tokenizer_class = GPT2Tokenizer
-        self.tokenizer = tokenizer_class.from_pretrained(model_name_or_path)
+    def __init__(self, dirname, tokenizer):
+        self.tokenizer = tokenizer #tokenizer_class.from_pretrained(model_name_or_path)
         self.dirname = dirname
 
     def extract_wiki_pages(self, json_path):
@@ -45,10 +44,9 @@ class WikiData:
         #token_ids = self.tokenizer.encode(text, add_special_tokens=False)
         tokens = self.tokenizer.tokenize(text)
         yield tokens, title, page_id
-        #return tokens, title, page_id
 
 
-    def wiki_token_ids_no_pool(self, dirname):
+    def wiki_token_ids_no_multiprocessing(self, dirname):
         articles, articles_all = 0, 0
         positions, positions_all = 0, 0
         metadata = False
@@ -89,8 +87,6 @@ class WikiData:
                 articles, positions, articles_all, positions_all, ARTICLE_MIN_WORDS
             )
             length = articles  # cache corpus length
-
-
 
 
     def wiki_token_ids(self, dirname):
@@ -144,7 +140,7 @@ class WikiData:
     def __iter__(self):
         # for ids in self.wiki_token_ids(self.dirname):
         #     yield list(dict(Counter(ids)).items())
-        for ids in self.wiki_token_ids_no_pool(self.dirname):
+        for ids in self.wiki_token_ids_no_multiprocessing(self.dirname):
             yield ids
 
 
@@ -181,6 +177,22 @@ if __name__ == "__main__":
     # t2 = time.time()
     # print(t2-t1)
 
-    mm_corpus = MmCorpus('/home/rohola/codes/topical_language_generation/caches/wiki_bow.mm')
-    print(mm_corpus)
-    print(next(iter(mm_corpus)))
+    id2word_wiki = Dictionary.load('/home/rohola/codes/topical_language_generation/caches/wiki_cache/wiki_dict')
+    temp = id2word_wiki[0]
+
+    mm_corpus = MmCorpus('/home/rohola/codes/topical_language_generation/caches/wiki_cache/wiki_bow.mm')
+    #print(mm_corpus)
+    #print(next(iter(mm_corpus)))
+
+    clipped_corpus = ClippedCorpus(mm_corpus, 4000)
+    lda_model = LdaModel(clipped_corpus,
+                         num_topics=10,
+                         id2word=id2word_wiki,
+                         alpha=0.001,
+                         chunksize=200,
+                         iterations=400,
+                         passes=10
+                         )
+    s = lda_model.print_topics(10)
+    #lda_model.top_topics()
+    print(s)

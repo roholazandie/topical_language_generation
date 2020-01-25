@@ -1,12 +1,16 @@
+from gensim.utils import ClippedCorpus
+
 from datasets.topical_dataset import TopicalDataset
 from gensim.models import LdaModel
-from gensim.corpora import Dictionary
+from gensim.corpora import Dictionary, MmCorpus
+
+from datasets.wikidata import WikiData, WikiCorpus
 from dictionary import TopicalDictionary
 import numpy as np
 import os
 import pickle
 from pprint import pprint
-from configs import LDAConfig
+from configs import LDAConfig, LDAWikiConfig
 from topical_tokenizers import SpacyTokenizer, TransformerGPT2Tokenizer
 import time
 from collections import defaultdict
@@ -40,13 +44,13 @@ class LDAModel:
         pickle.dump(self.corpus, open(corpus_file, 'wb'))
 
         temp = self.dictionary[0]  # This is only to "load" the dictionary.
-        self.id2word = self.dictionary.id2token
+        self.id2token = self.dictionary.id2token
 
 
     def _run_model(self):
         self.model = LdaModel(
             corpus=self.corpus,
-            id2word=self.id2word,
+            id2word=self.id2token,
             chunksize=self.config.chunksize,
             alpha=self.config.alpha,
             eta=self.config.eta,
@@ -83,7 +87,7 @@ class LDAModel:
         all_topic_tokens_file = os.path.join(self.config.cached_dir, "all_topic_tokens.p")
         if not os.path.isfile(all_topic_tokens_file):
             tokenid_probs = [self.model.get_topic_terms(i) for i in range(self.config.num_topics)]
-            all_topic_tokens = [[(self.id2word[i], p) for i, p in tokenid_probs_topic] for tokenid_probs_topic in
+            all_topic_tokens = [[(self.id2token[i], p) for i, p in tokenid_probs_topic] for tokenid_probs_topic in
                                 tokenid_probs]
             pickle.dump(all_topic_tokens, open(all_topic_tokens_file, 'wb'))
         else:
@@ -98,8 +102,8 @@ class LDAModel:
                 self._start()
                 psi_matrix = np.zeros((self.config.num_topics, self.tokenizer.tokenizer.vocab_size))
                 matrix = self.model.get_topics()  # a matrix of k x V' (num_topic x selected_vocab_size)
-                for i in range(len(self.id2word)):
-                    j = self.tokenizer.tokenizer.convert_tokens_to_ids(self.id2word[i])
+                for i in range(len(self.id2token)):
+                    j = self.tokenizer.tokenizer.convert_tokens_to_ids(self.id2token[i])
                     psi_matrix[:, j] = matrix[:, i]
 
                 pickle.dump(psi_matrix, open(psi_matrix_file, 'wb'))
@@ -158,63 +162,6 @@ class LDAModel:
         return theta_matrix
 
 
-# config_file = "configs/alexa_lda_config.json"
-# config = LDAConfig.from_json_file(config_file)
-#
-# # tokenizer = TransformerGPT2Tokenizer(config.cached_dir)
-# tokenizer = SpacyTokenizer(dict_dir=config.cached_dir)
-#
-# topical_dataset = TopicalDataset(config.dataset_dir, tokenizer)
-#
-# docs = [doc for doc in topical_dataset]
-#
-# dictionary = Dictionary(docs)
-# # Filter out words that occur less than 20 documents, or more than 50% of the documents.
-# dictionary.filter_extremes(no_below=20, no_above=0.2)
-#
-# # Bag-of-words representation of the documents.
-# corpus = [dictionary.doc2bow(doc) for doc in docs]
-# temp = dictionary[0]  # This is only to "load" the dictionary.
-# id2word = dictionary.id2token
-#
-# # smaller alpha means it's more likely that documents consist of smaller number of topics (they are more concentrated on a few topics, could be even one topic in limit)
-# # bigger alpha means documents are not concentrated on one (or a few) topics instead all over the place
-#
-# # smaller eta (or beta in original paper) values means topics are more concentrated on smaller number of key words (topics are recognized with very specific words)
-# # bigger eta values means topics are more scattered and all over the place based on words, meaning topics don't have very specific key words.
-#
-#
-# model = LdaModel(
-#     corpus=corpus,
-#     id2word=id2word,
-#     chunksize=config.chunksize,
-#     alpha=config.alpha,
-#     eta=config.eta,
-#     iterations=config.iterations,
-#     num_topics=config.num_topics,
-#     passes=config.passes,
-#     eval_every=config.eval_every
-# )
-#
-# psi_matrix = model.get_topics()  # a matrix of k x V (num_topic x vocab_size)
-# assert psi_matrix.shape[0] == config.num_topics
-# assert psi_matrix.shape[1] == len(id2word)
-#
-# num_documents = len(corpus)
-# theta_matrix = np.zeros((num_documents, config.num_topics))
-# for i, c in enumerate(corpus):
-#     for j, p in model.get_document_topics(c):
-#         theta_matrix[i, j] = p
-#
-# # np.save(config.topics_file, model.get_topics())
-# # # Average topic coherence is the sum of topic coherences of all topics, divided by the number of topics.
-# # avg_topic_coherence = sum([t[1] for t in top_topics]) / num_topics
-# # print('Average topic coherence: %.4f.' % avg_topic_coherence)
-#
-#
-# top_topics = model.top_topics(corpus)
-# pprint(top_topics)
-# pickle.dump(top_topics, open(config.topic_top_words_file, "wb"))
 
 
 if __name__ == "__main__":

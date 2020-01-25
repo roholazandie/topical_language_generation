@@ -47,6 +47,52 @@ class LDAConfig:
         return cls.from_dict(json.loads(config_json))
 
 
+class LDAWikiConfig:
+
+    def __init__(self,
+                 dataset_dir="",
+                 cached_dir="",
+                 topics_file="",
+                 topic_top_words_file="",
+                 tokenizer="",
+                 alpha="auto",
+                 eta="auto",
+                 num_topics="",
+                 chunksize="",
+                 passes="",
+                 iterations="",
+                 eval_every=""
+                 ):
+        self.dataset_dir = dataset_dir
+        self.cached_dir = cached_dir
+        self.topics_file = topics_file
+        self.topic_top_words_file = topic_top_words_file
+        self.tokenizer = tokenizer
+        self.alpha = alpha
+        self.eta = eta
+        self.num_topics = num_topics
+        self.chunksize = chunksize
+        self.passes = passes
+        self.iterations = iterations
+        self.eval_every = eval_every
+
+    @classmethod
+    def from_dict(cls, json_object):
+        config = LDAWikiConfig()
+        for key in json_object:
+            config.__dict__[key] = json_object[key]
+        return config
+
+    @classmethod
+    def from_json_file(cls, json_file):
+        with open(json_file) as f:
+            config_json = f.read()
+
+        return cls.from_dict(json.loads(config_json))
+
+
+
+
 class LSIConfig:
     def __init__(self,
                  dataset_dir="",
@@ -160,6 +206,29 @@ class TopicalGenerationConfig:
     @classmethod
     def from_dict(cls, json_object):
         config = TopicalGenerationConfig()
+        for key in json_object:
+            config.__dict__[key] = json_object[key]
+        return config
+
+    @classmethod
+    def from_json_file(cls, json_file):
+        with open(json_file) as f:
+            config_json = f.read()
+
+        return cls.from_dict(json.loads(config_json))
+
+
+class DatabseConfig:
+    def __init__(self, database_name="",
+                 collection_name="",
+                 dataset_dir=""):
+        self.database_name = database_name
+        self.collection_name = collection_name
+        self.dataset_dir = dataset_dir
+
+    @classmethod
+    def from_dict(cls, json_object):
+        config = DatabseConfig()
         for key in json_object:
             config.__dict__[key] = json_object[key]
         return config
