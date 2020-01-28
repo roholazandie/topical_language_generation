@@ -558,6 +558,7 @@ class PreTrainedModel(nn.Module):
             do_sample=None,
             psi=None,
             theta=None,
+            topic_word_matrix=None,
             num_beams=None,
             temperature=None,
             top_k=None,
@@ -715,7 +716,7 @@ class PreTrainedModel(nn.Module):
             effective_batch_size = batch_size
 
         if psi is not None and theta is None:
-            output = self._generate_topical(
+            output = self._generate_topical_lda(
                 input_ids,
                 psi,
                 cur_len,
@@ -734,6 +735,21 @@ class PreTrainedModel(nn.Module):
                 input_ids,
                 psi,
                 theta,
+                cur_len,
+                max_length,
+                temperature,
+                top_k,
+                top_p,
+                repetition_penalty,
+                pad_token_id,
+                eos_token_ids,
+                effective_batch_size,
+            )
+
+        elif topic_word_matrix is not None:
+            output = self._generate_topical_lsi(
+                input_ids,
+                topic_word_matrix,
                 cur_len,
                 max_length,
                 temperature,
@@ -820,7 +836,7 @@ class PreTrainedModel(nn.Module):
             print(logits[logits != -float("inf")].numpy().min())
             #np.unique((F.softmax(torch.log(scores)).numpy()>0.01), return_counts=True)
             #alpha = 7 #this is a good value
-            alpha = 20 #higher values of alpha corresponds to more on topic
+            alpha = 5 #higher values of alpha corresponds to more on topic
             LOGIT_THRESHOLD = -100 # smaller values of Threshold is more on topic
             logscores = torch.log(scores)
             indices = logits < LOGIT_THRESHOLD#todo cut logits relatively not absolutely
@@ -834,7 +850,7 @@ class PreTrainedModel(nn.Module):
             else:
                 logscore2 = logscores
                 logscore2 = logscore2[logscore2 != -float("inf")]
-                plt.hist(logscore2, bins=100, color='y')
+                #plt.hist(logscore2, bins=100, color='y')
                 #plt.show()
 
             total_probs = F.softmax(logits + alpha * logscores, dim=-1)
@@ -972,7 +988,7 @@ class PreTrainedModel(nn.Module):
 
 
 
-    def _generate_topical(
+    def _generate_topical_lda(
             self,
             input_ids,
             psi,
@@ -1214,6 +1230,113 @@ class PreTrainedModel(nn.Module):
 
         return input_ids
 
+
+
+
+    def _generate_topical_lsi(
+            self,
+            input_ids,
+            topic_word_matrix,
+            cur_len,
+            max_length,
+            temperature,
+            top_k,
+            top_p,
+            repetition_penalty,
+            pad_token_id,
+            eos_token_ids,
+            batch_size,
+    ):
+
+        ##########this part need to be removed
+        from lsi_model import LSIModel
+        lsi_config_file = "configs/alexa_lsi_config.json"
+        lsi_model = LSIModel(lsi_config_file)
+        topic_word_matrix = lsi_model.get_topic_words_matrix()
+        tokenizer = lsi_model.tokenizer
+        ###########################################################################
+
+        # current position / max lengths / length of generated sentences / unfinished sentences
+        unfinished_sents = input_ids.new(batch_size).fill_(1)
+
+        past = None
+
+        while cur_len < max_length:
+            model_inputs = self.prepare_inputs_for_generation(input_ids, past=past)
+            outputs = self(**model_inputs)
+            next_token_logits = outputs[0][:, -1, :]
+
+            # if model has past, then set the past variable to speed up decoding
+            if self._do_output_past(outputs):
+                past = outputs[1]
+
+            # repetition penalty from CTRL paper (https://arxiv.org/abs/1909.05858)
+            if repetition_penalty != 1.0:
+                for i in range(batch_size):
+                    for previous_token in set(input_ids[i].tolist()):
+                        # if score < 0 then repetition penalty has to multiplied to reduce the previous token probability
+                        if next_token_logits[i, previous_token] < 0:
+                            next_token_logits[i, previous_token] *= repetition_penalty
+                        else:
+                            next_token_logits[i, previous_token] /= repetition_penalty
+
+
+            # Temperature (higher temperature => more likely to sample low probability tokens)
+            if temperature != 1.0:
+                next_token_logits = next_token_logits / temperature
+            # Top-p/top-k filtering
+            next_token_logits = top_k_top_p_filtering(next_token_logits, top_k=top_k, top_p=top_p)
+            token_probs = F.softmax(next_token_logits, dim=-1)
+
+            ########################
+
+            # we should choose topics randomly with theta
+            topic_probs = torch.tensor(np.abs(topic_word_matrix[0, :]))  # zero'th topic
+            total_probs = self.fusion(next_token_logits.squeeze(0), topic_probs, method="method3")
+
+
+            indices = np.where((token_probs[0, :] - total_probs) > 0.01)[0]
+            pre_post_token_probs = [(tokenizer.tokenizer.convert_ids_to_tokens(j),
+                  round(total_probs[j].item(), 4)) for j in indices.tolist()]
+            pre_post_token_probs = sorted(pre_post_token_probs, key=lambda x: x[1], reverse=True)
+            pre_minus_post = " ".join([str(x) for x in pre_post_token_probs])
+            print("pre_minus_post", pre_minus_post)
+
+
+            indices = np.where((total_probs - token_probs[0, :]) > 0.01)[0]
+
+            post_pre_token_probs = [(tokenizer.tokenizer.convert_ids_to_tokens(j),
+                  round(total_probs[j].item(), 4)) for j in indices.tolist()]
+            post_pre_token_probs = sorted(post_pre_token_probs, key=lambda x: x[1], reverse=True)
+            post_minus_pre = " ".join([str(x) for x in post_pre_token_probs])
+            print("post_minus_pre", post_minus_pre)
+
+
+
+            # Sample
+            print(total_probs.min())
+            next_token = torch.multinomial(total_probs, num_samples=1).squeeze(0)
+
+            print("next token: ", tokenizer.tokenizer.convert_ids_to_tokens([next_token]))
+            print("prob of generated token before fusion", token_probs[0, next_token.item()].item())
+            print("prob of generated token after fusion: ", total_probs[next_token.item()].item())
+            print("======================================================")
+            # update generations and finished sentences
+            tokens_to_add = next_token * unfinished_sents + pad_token_id * (1 - unfinished_sents)
+            input_ids = torch.cat([input_ids, tokens_to_add.unsqueeze(-1)], dim=-1)
+            for eos_token_id in eos_token_ids:
+                unfinished_sents.mul_(tokens_to_add.ne(eos_token_id).long())
+            cur_len = cur_len + 1
+
+            # stop when there is a </s> in each sentence, or if we exceed the maximul length
+            if unfinished_sents.max() == 0:
+                break
+
+        # add eos_token_ids to unfinished sentences
+        if cur_len == max_length:
+            input_ids[:, -1].masked_fill_(unfinished_sents.to(dtype=torch.bool), eos_token_ids[0])
+
+        return input_ids
 
 
     def _generate_no_beam_search(

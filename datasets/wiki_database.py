@@ -1,17 +1,11 @@
 from gensim import utils
 from gensim.corpora.wikicorpus import filter_wiki, init_to_ignore_interrupt
-import multiprocessing
-#from topical_tokenizers import TransformerGPT2Tokenizer
 import os
 import json
 from configs import DatabseConfig
-from collections import Counter
-from gensim.utils import ClippedCorpus
-from gensim.models import LdaModel
 
 from topical_tokenizers import TransformerGPT2Tokenizer
-from transformers import GPT2TokenizerFast
-from pymongo import MongoClient
+from pymongo import MongoClient, ASCENDING
 
 IGNORED_NAMESPACES = [
     'Wikipedia', 'Category', 'File', 'Portal', 'Template',
@@ -26,10 +20,9 @@ class WikiDatabase:
 
     def __init__(self, config_file, tokenizer):
         self.dbconfig = DatabseConfig.from_json_file(config_file)
-        self.tokenizer = tokenizer #tokenizer_class.from_pretrained(model_name_or_path)
+        self.tokenizer = tokenizer  # tokenizer_class.from_pretrained(model_name_or_path)
         client = MongoClient()
         self.db = client[self.dbconfig.database_name]
-
 
     def extract_wiki_pages(self, json_path):
         for root, dirs, files in os.walk(json_path):
@@ -46,12 +39,11 @@ class WikiDatabase:
     def process_article(self, args):
         text, title, page_id = args[0], args[1], args[2]
         text = filter_wiki(text)
-        #token_ids = self.tokenizer.encode(text, add_special_tokens=False)
+        # token_ids = self.tokenizer.encode(text, add_special_tokens=False)
         tokens = self.tokenizer.tokenize(text)
         yield text, tokens, title, page_id
 
-
-    def populate_database(self,):
+    def populate_database(self, ):
         articles, articles_all = 0, 0
         positions, positions_all = 0, 0
 
@@ -93,13 +85,15 @@ class WikiDatabase:
             )
             length = articles  # cache corpus length
 
+    def create_index(self, index_name):
+        self.db[self.dbconfig.collection_name].create_index([(index_name, ASCENDING)])
+
     def __iter__(self):
-        for document in self.db[self.dbconfig.collection_name].find(): #todo: not sure this is working
+        for document in self.db[self.dbconfig.collection_name].find():  # todo: not sure this is working
             yield document
 
     def __getitem__(self, item):
         return self.db[self.dbconfig.collection_name].find_one({"article": item})
-
 
 
 if __name__ == "__main__":
@@ -107,6 +101,21 @@ if __name__ == "__main__":
     cached_dir = "/home/rohola/codes/topical_language_generation/caches"
     tokenizer = TransformerGPT2Tokenizer(cached_dir)
     wiki_database = WikiDatabase(config_file, tokenizer)
-    wiki_database.populate_database()
+    # wiki_database.populate_database()
+    # wiki_database.create_index("article")
 
-    #print(wiki_database[4])
+    import time
+
+    t1 = time.time()
+    print(wiki_database[4000])
+    t2 = time.time()
+    print(wiki_database[1000001])
+    t3 = time.time()
+    print(wiki_database[2000000])
+    t4 = time.time()
+    print(wiki_database[4000000])
+    t5 = time.time()
+    print(t2 - t1)
+    print(t3 - t2)
+    print(t4 - t3)
+    print(t5 - t4)

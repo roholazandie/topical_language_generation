@@ -26,6 +26,7 @@ import torch
 
 from configs import TopicalGenerationConfig
 from lda_model import LDAModel
+from lsi_model import LSIModel
 from transformers import (
     CTRLLMHeadModel,
     CTRLTokenizer,
@@ -183,22 +184,41 @@ def main():
     encoded_prompt = tokenizer.encode(prompt_text, add_special_tokens=False, return_tensors="pt")
     encoded_prompt = encoded_prompt.to(config.device)
 
-    lda_config_file = "configs/alexa_lda_config.json"
-    lda_model = LDAModel(lda_config_file)
-    theta = lda_model.get_theta_matrix()
-    psi = lda_model.get_psi_matrix()
-    #theta=None
+    topical_model = "lsi" #"lda"
+    if topical_model == "lda":
+        lda_config_file = "configs/alexa_lda_config.json"
+        lda_model = LDAModel(lda_config_file)
+        theta = lda_model.get_theta_matrix()
+        psi = lda_model.get_psi_matrix()
+        #theta=None
 
-    output_sequences = model.generate(
-        input_ids=encoded_prompt,
-        psi=psi,
-        theta=theta,
-        max_length=config.length,
-        temperature=config.temperature,
-        top_k=config.top_k,
-        top_p=config.top_p,
-        repetition_penalty=config.repetition_penalty,
-    )
+        output_sequences = model.generate(
+            input_ids=encoded_prompt,
+            psi=psi,
+            theta=theta,
+            max_length=config.length,
+            temperature=config.temperature,
+            top_k=config.top_k,
+            top_p=config.top_p,
+            repetition_penalty=config.repetition_penalty,
+        )
+
+    elif topical_model == "lsi":
+        lsi_config_file = "configs/alexa_lsi_config.json"
+        lsi_model = LSIModel(lsi_config_file)
+        topic_word_matrix = lsi_model.get_topic_words_matrix()
+
+        output_sequences = model.generate(
+            input_ids=encoded_prompt,
+            topic_word_matrix=topic_word_matrix,
+            max_length=config.length,
+            temperature=config.temperature,
+            top_k=config.top_k,
+            top_p=config.top_p,
+            repetition_penalty=config.repetition_penalty,
+        )
+
+
 
     # Batch size == 1. to add more examples please use num_return_sequences > 1
     generated_sequence = output_sequences[0].tolist()

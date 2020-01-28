@@ -74,4 +74,8 @@ class LDAModelWiki:
 
 
 if __name__ == "__main__":
-    pass
+    config_file = "/home/rohola/codes/topical_language_generation/configs/wiki_lda_config.json"
+    lda_model_wiki = LDAModelWiki(config_file)
+    #lda_model_wiki._run_model()
+    m = lda_model_wiki.get_model()
+    lda_model_wiki.get_psi_matrix()
