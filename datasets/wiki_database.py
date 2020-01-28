@@ -2,7 +2,7 @@ from gensim import utils
 from gensim.corpora.wikicorpus import filter_wiki, init_to_ignore_interrupt
 import os
 import json
-from configs import DatabseConfig
+from configs import DatabaseConfig
 
 from topical_tokenizers import TransformerGPT2Tokenizer
 from pymongo import MongoClient, ASCENDING
@@ -19,7 +19,7 @@ ARTICLE_MIN_WORDS = 50
 class WikiDatabase:
 
     def __init__(self, config_file, tokenizer):
-        self.dbconfig = DatabseConfig.from_json_file(config_file)
+        self.dbconfig = DatabaseConfig.from_json_file(config_file)
         self.tokenizer = tokenizer  # tokenizer_class.from_pretrained(model_name_or_path)
         client = MongoClient()
         self.db = client[self.dbconfig.database_name]

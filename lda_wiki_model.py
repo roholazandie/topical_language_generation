@@ -18,7 +18,7 @@ class LDAModelWiki:
 
         self.wiki_dict_file = os.path.join(self.config.cached_dir, "wiki_dict")
         self.mm_corpus_file = os.path.join(self.config.cached_dir, "wiki_bow.mm")
-        self.model_file = os.path.join(self.config.cached_dir, "model.p")
+        self.model_file = os.path.join(self.config.cached_dir, "lda_model.p")
 
     def _create_files(self):
         wikidata = WikiData(self.config.dataset_dir, self.tokenizer)

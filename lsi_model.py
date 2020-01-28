@@ -20,7 +20,7 @@ class LSIModel:
             self.tokenizer = TransformerGPT2Tokenizer(self.config.cached_dir)
 
         self.topic_top_words_file = os.path.join(self.config.cached_dir, "top_word_file.p")
-        self.topic_words_matrix = os.path.join(self.config.cached_dir, "topic_matrix.p")
+        self.topic_words_matrix_file = os.path.join(self.config.cached_dir, "topic_matrix.p")
         self.model_file = os.path.join(self.config.cached_dir, "model_file.p")
 
         #self._start()
@@ -61,7 +61,7 @@ class LSIModel:
         return topic_words
 
     def get_topic_words_matrix(self):
-        if not os.path.isfile(self.topic_words_matrix):
+        if not os.path.isfile(self.topic_words_matrix_file):
             lsi_model = self.get_model()
             topic_words = lsi_model.get_topics()  # K X V' (num_topics x selected_vocab_size)
             topic_word_matrix = np.zeros(
@@ -71,9 +71,9 @@ class LSIModel:
                 j = self.tokenizer.tokenizer.convert_tokens_to_ids(lsi_model.id2word[i])
                 topic_word_matrix[:, j] = topic_words[:, i]
 
-            pickle.dump(topic_word_matrix, open(self.topic_words_matrix, 'wb'))
+            pickle.dump(topic_word_matrix, open(self.topic_words_matrix_file, 'wb'))
         else:
-            topic_word_matrix = pickle.load(open(self.topic_words_matrix, 'rb'))
+            topic_word_matrix = pickle.load(open(self.topic_words_matrix_file, 'rb'))
         return topic_word_matrix
 
     def get_topic_words_id(self):
