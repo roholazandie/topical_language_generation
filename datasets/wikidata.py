@@ -11,6 +11,7 @@ from gensim.models import LdaModel
 from transformers import GPT2TokenizerFast
 from transformers import GPT2Tokenizer
 
+
 IGNORED_NAMESPACES = [
     'Wikipedia', 'Category', 'File', 'Portal', 'Template',
     'MediaWiki', 'User', 'Help', 'Book', 'Draft', 'WikiProject',
