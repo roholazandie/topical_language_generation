@@ -88,9 +88,10 @@ class WikiDatabase:
     def create_index(self, index_name):
         self.db[self.dbconfig.collection_name].create_index([(index_name, ASCENDING)])
 
-    def __iter__(self):
+    def __iter__(self,):
         for document in self.db[self.dbconfig.collection_name].find():  # todo: not sure this is working
-            yield document
+            yield document['token_ids']
+            #yield document['title']
 
     def __getitem__(self, item):
         return self.db[self.dbconfig.collection_name].find_one({"article": item})
@@ -104,18 +105,21 @@ if __name__ == "__main__":
     # wiki_database.populate_database()
     # wiki_database.create_index("article")
 
-    import time
+    for t in wiki_database:
+        print(t)
 
-    t1 = time.time()
-    print(wiki_database[4000])
-    t2 = time.time()
-    print(wiki_database[1000001])
-    t3 = time.time()
-    print(wiki_database[2000000])
-    t4 = time.time()
-    print(wiki_database[4000000])
-    t5 = time.time()
-    print(t2 - t1)
-    print(t3 - t2)
-    print(t4 - t3)
-    print(t5 - t4)
+    # import time
+    #
+    # t1 = time.time()
+    # print(wiki_database[100])
+    # t2 = time.time()
+    # print(wiki_database[1000001])
+    # t3 = time.time()
+    # print(wiki_database[2000000])
+    # t4 = time.time()
+    # print(wiki_database[4000000])
+    # t5 = time.time()
+    # print(t2 - t1)
+    # print(t3 - t2)
+    # print(t4 - t3)
+    # print(t5 - t4)

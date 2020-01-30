@@ -4,3 +4,7 @@ regex
 spacy
 torch
 matplotlib
+filelock
+tokenizers==0.0.11
+sentencepiece
+sacremoses

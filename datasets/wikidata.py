@@ -47,14 +47,9 @@ class WikiData:
         yield tokens, title, page_id
 
 
-    def wiki_token_ids_no_multiprocessing(self, dirname):
+    def wiki_token_ids(self, dirname):
         articles, articles_all = 0, 0
         positions, positions_all = 0, 0
-        metadata = False
-        # filter_namespaces = ('0',)
-        # filter_articles = None
-        # texts = ((text, title, pageid) for title, text, pageid in
-        #          extract_pages(bz2.BZ2File(fname), filter_namespaces, filter_articles))
 
         texts = ((doc["text"], doc["title"], doc["id"]) for doc in self.extract_wiki_pages(dirname))
 
@@ -90,58 +85,11 @@ class WikiData:
             length = articles  # cache corpus length
 
 
-    def wiki_token_ids(self, dirname):
-        n_processes = 2
-        articles, articles_all = 0, 0
-        positions, positions_all = 0, 0
-        metadata = False
-        # filter_namespaces = ('0',)
-        # filter_articles = None
-        # texts = ((text, title, pageid) for title, text, pageid in
-        #          extract_pages(bz2.BZ2File(fname), filter_namespaces, filter_articles))
-
-        texts = ((doc["text"], doc["title"], doc["id"]) for doc in self.extract_wiki_pages(dirname))
-
-        pool = multiprocessing.Pool(n_processes, init_to_ignore_interrupt)
-
-        try:
-            # process the corpus in smaller chunks of docs, because multiprocessing.Pool
-            # is dumb and would load the entire input into RAM at once...
-            for group in utils.chunkize(texts, chunksize=10 * n_processes, maxsize=1):
-                for tokens_ids, title, pageid in pool.imap(self.process_article, group):
-                    articles_all += 1
-                    positions_all += len(tokens_ids)
-                    # article redirects and short stubs are pruned here
-                    if len(tokens_ids) < ARTICLE_MIN_WORDS or any(
-                            title.startswith(ignore + ':') for ignore in IGNORED_NAMESPACES):
-                        continue
-                    articles += 1
-                    positions += len(tokens_ids)
-                    if metadata:
-                        yield (tokens_ids, (pageid, title))
-                    else:
-                        yield tokens_ids
-
-        except KeyboardInterrupt:
-            print(
-                "user terminated iteration over Wikipedia corpus after %i documents with %i positions "
-                "(total %i articles, %i positions before pruning articles shorter than %i words)",
-                articles, positions, articles_all, positions_all, ARTICLE_MIN_WORDS
-            )
-        else:
-            print(
-                "finished iterating over Wikipedia corpus of %i documents with %i positions "
-                "(total %i articles, %i positions before pruning articles shorter than %i words)",
-                articles, positions, articles_all, positions_all, ARTICLE_MIN_WORDS
-            )
-            length = articles  # cache corpus length
-        finally:
-            pool.terminate()
 
     def __iter__(self):
         # for ids in self.wiki_token_ids(self.dirname):
         #     yield list(dict(Counter(ids)).items())
-        for ids in self.wiki_token_ids_no_multiprocessing(self.dirname):
+        for ids in self.wiki_token_ids(self.dirname):
             yield ids
 
 

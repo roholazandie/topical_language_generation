@@ -2,7 +2,9 @@ from gensim.utils import ClippedCorpus
 from gensim.models import LsiModel, TfidfModel
 from gensim.corpora import Dictionary, MmCorpus
 
+from datasets.topical_dataset import TopicalDataset
 from datasets.wikidata import WikiData, WikiCorpus
+from datasets.wiki_database import WikiDatabase
 import numpy as np
 import os
 import pickle
@@ -24,9 +26,41 @@ class LSIModelWiki:
         self.topic_words_matrix_file = os.path.join(self.config.cached_dir, "topic_words_matrix.p")
         self.topic_top_words_file = os.path.join(self.config.cached_dir, "topic_top_words.p")
 
+
+    def _create_files_db(self):
+        config_file = "/home/rohola/codes/topical_language_generation/configs/wiki_database.json"
+        wikidata = WikiDatabase(config_file, self.tokenizer)
+        docs = []
+        for i, tokens in enumerate(wikidata):
+            docs.append(tokens)
+            if i > 50000:
+                break
+
+        id2word_wiki = Dictionary(docs)
+        id2word_wiki.filter_extremes(no_below=20, no_above=0.01)
+
+        id2word_wiki.save(self.wiki_dict_file)
+
+        wiki_corpus = WikiCorpus(docs, id2word_wiki)
+        MmCorpus.serialize(self.mm_corpus_file, wiki_corpus)
+
+    def _create_files1(self):
+        dir = "/media/rohola/data/dialog_systems/alexa_prize_topical_chat_dataset/reading_sets/"
+        wikidata = TopicalDataset(dir, self.tokenizer)
+        doc_stream = (tokens for tokens in wikidata)
+
+        id2word_wiki = Dictionary(doc_stream)
+        id2word_wiki.filter_extremes(no_below=20, no_above=0.2)
+
+        id2word_wiki.save(self.wiki_dict_file)
+
+        wiki_corpus = WikiCorpus(wikidata, id2word_wiki)
+        MmCorpus.serialize(self.mm_corpus_file, wiki_corpus)
+
     def _create_files(self):
         wikidata = WikiData(self.config.dataset_dir, self.tokenizer)
         doc_stream = (tokens for tokens in wikidata)
+
         id2word_wiki = Dictionary(doc_stream)
         id2word_wiki.filter_extremes(no_below=20, no_above=0.1)
 
@@ -40,11 +74,11 @@ class LSIModelWiki:
         mm_corpus = MmCorpus(self.mm_corpus_file)
 
         #to be removed
-        clipped_corpus = ClippedCorpus(mm_corpus, 4000)
+        #mm_corpus = ClippedCorpus(mm_corpus, 4000)
 
-        tfidf_model = TfidfModel(clipped_corpus, id2word=id2word_wiki)
+        tfidf_model = TfidfModel(mm_corpus, id2word=id2word_wiki)
 
-        corpus = tfidf_model[clipped_corpus]
+        corpus = tfidf_model[mm_corpus]
         MmCorpus.serialize(self.wiki_tfidf_file, corpus)
 
         self.model = LsiModel(corpus,
@@ -93,8 +127,12 @@ class LSIModelWiki:
 if __name__ == "__main__":
     config_file = "/home/rohola/codes/topical_language_generation/configs/wiki_lsi_config.json"
     lsi_model_wiki = LSIModelWiki(config_file)
-    #lsi_model_wiki._run_model()
+    lsi_model_wiki._create_files_db()
+    #lsi_model_wiki._create_files1()
+    lsi_model_wiki._run_model()
     #m = lsi_model_wiki.get_model()
     #tw = lsi_model_wiki.get_topic_words_matrix()
     twords = lsi_model_wiki.get_topic_words(10)
-    print([t[1] for t in twords])
+    topic_words =[t[1] for t in twords]
+    for topic in topic_words:
+        print(topic)
