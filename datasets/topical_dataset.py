@@ -1,11 +1,15 @@
 import os
 import json
+from datasets.dataset import Dataset
 from topical_tokenizers import TransformerGPT2Tokenizer
+import logging
+logging.basicConfig(level=logging.DEBUG)
 
-
-class TopicalDataset:
+class TopicalDataset(Dataset):
 
     def __init__(self, dirname, tokenizer, do_tokenize=True):
+        super().__init__(dirname, tokenizer, do_tokenize)
+        logging.debug("using alexa topical dataset")
         self.tokenizer = tokenizer
         self.dirname = dirname
         self.do_tokenize = do_tokenize

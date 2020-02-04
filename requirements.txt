@@ -8,3 +8,7 @@ filelock
 tokenizers==0.0.11
 sentencepiece
 sacremoses
+#only for visualization
+networkx
+plotly
+pygraphviz

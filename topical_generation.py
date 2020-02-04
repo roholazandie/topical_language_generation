@@ -204,7 +204,7 @@ def main():
         )
 
     elif topical_model == "lsi":
-        lsi_config_file = "configs/alexa_lsi_config.json"
+        lsi_config_file = "configs/nytimes_lsi_config.json"
         lsi_model = LSIModel(lsi_config_file)
         topic_word_matrix = lsi_model.get_topic_words_matrix()
 

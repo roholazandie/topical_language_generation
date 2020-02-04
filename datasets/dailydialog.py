@@ -1,11 +1,14 @@
 from tokenizers.tokenization_gpt2 import GPT2Tokenizer
 import os
 import ast
+import logging
+logging.basicConfig(level=logging.DEBUG)
 
 class DailyDialog():
 
     def __init__(self, dirname):
         model_name_or_path = "gpt2"  # 50257 tokens
+        logging.debug("using dailydialog dataset")
         tokenizer_class = GPT2Tokenizer
         self.tokenizer = tokenizer_class.from_pretrained(model_name_or_path)
         self.dirname = dirname

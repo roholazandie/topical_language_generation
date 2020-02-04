@@ -3,8 +3,12 @@ from collections import defaultdict
 from gensim.models import LsiModel, TfidfModel
 from gensim.corpora import Dictionary
 from configs import LSIConfig
+from datasets.congress_dataset import CongressDataset
 from topical_tokenizers import SpacyTokenizer, TransformerGPT2Tokenizer
 from datasets.topical_dataset import TopicalDataset
+from datasets.nytimes_dataset import NYTimesDataset
+from datasets.anes_dataset import AnesDataset
+from spacy.lang.en.stop_words import STOP_WORDS
 import numpy as np
 import pickle
 import os
@@ -21,7 +25,7 @@ class LSIModel:
 
         self.topic_top_words_file = os.path.join(self.config.cached_dir, "top_word_file.p")
         self.topic_words_matrix_file = os.path.join(self.config.cached_dir, "topic_matrix.p")
-        self.model_file = os.path.join(self.config.cached_dir, "model_file.p")
+        self.model_file = os.path.join(self.config.cached_dir, "lsi_model_file.p")
 
         #self._start()
 
@@ -30,9 +34,22 @@ class LSIModel:
         self._run_model()
 
     def _prepare_dataset(self):
-        topical_dataset = TopicalDataset(self.config.dataset_dir, self.tokenizer)
-        docs = [doc for doc in topical_dataset]
+        if self.config.name == "alexa":
+            dataset = TopicalDataset(self.config.dataset_dir, self.tokenizer)
+        elif self.config.name == "nytimes":
+            dataset = NYTimesDataset(self.config.dataset_dir, self.tokenizer)
+        elif self.config.name == "anes":
+            dataset = AnesDataset(self.config.dataset_dir, self.tokenizer)
+        elif self.config.name == "congress":
+            dataset = CongressDataset(self.config.dataset_dir, self.tokenizer)
+        else:
+            raise ValueError("unknown dataset")
+
+        docs = [doc for doc in dataset]
         self.dictionary = Dictionary(docs)
+        # we certainly don't need lemmatization or stemmization because of the tokenizer we are using we probably don't need lowering
+        #stop_words = list(STOP_WORDS) + ['Ġ'+ w for w in STOP_WORDS]
+        #self.dictionary.filter_tokens(stop_words)
         self.dictionary.filter_extremes(no_below=20, no_above=0.2)
         self.corpus = [self.dictionary.doc2bow(doc) for doc in docs]
 
@@ -82,12 +99,28 @@ class LSIModel:
         return topic_words_id
 
 
-if __name__ == "__main__":
-    config_file = "configs/alexa_lsi_config.json"
-    lsi = LSIModel(config_file=config_file)
-    #lsi._start()
-    tw = lsi.get_topic_words(num_words=10)
-    print([t[1] for t in tw])
+    def _clear_cache(self):
+        all_cached_files = [self.model_file,
+                            self.topic_top_words_file,
+                            self.topic_words_matrix_file]
+        for f in all_cached_files:
+            try:
+                os.remove(f)
+            except:
+                pass
 
-    m = lsi.get_topic_words_matrix()
-    print(m.shape)
+if __name__ == "__main__":
+    #config_file = "configs/alexa_lsi_config.json"
+    #config_file = "configs/nytimes_lsi_config.json"
+    #config_file = "configs/anes_lsi_config.json"
+    config_file = "configs/congress_lsi_config.json"
+
+    lsi = LSIModel(config_file=config_file)
+    lsi._start()
+    tw = lsi.get_topic_words(num_words=10)
+    topic_words = [t[1] for t in tw]
+    for topic in topic_words:
+        print(topic)
+    # m = lsi.get_topic_words_matrix()
+    # print(m.shape)
+

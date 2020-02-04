@@ -26,7 +26,6 @@ class LSIModelWiki:
         self.topic_words_matrix_file = os.path.join(self.config.cached_dir, "topic_words_matrix.p")
         self.topic_top_words_file = os.path.join(self.config.cached_dir, "topic_top_words.p")
 
-
     def _create_files_db(self):
         config_file = "/home/rohola/codes/topical_language_generation/configs/wiki_database.json"
         wikidata = WikiDatabase(config_file, self.tokenizer)

@@ -4,6 +4,7 @@ import json
 class LDAConfig:
 
     def __init__(self,
+                 name="",
                  dataset_dir="",
                  cached_dir="",
                  dict_dir="",
@@ -18,6 +19,7 @@ class LDAConfig:
                  iterations="",
                  eval_every=""
                  ):
+        self.name = name
         self.dataset_dir = dataset_dir
         self.cached_dir = cached_dir
         self.dict_dir = dict_dir
@@ -135,6 +137,7 @@ class LSIWikiConfig:
 
 class LSIConfig:
     def __init__(self,
+                 name="",
                  dataset_dir="",
                  cached_dir="",
                  dict_dir="",
@@ -147,6 +150,7 @@ class LSIConfig:
                  iterations="",
                  eval_every=""
                  ):
+        self.name = name
         self.dataset_dir = dataset_dir
         self.cached_dir = cached_dir
         self.dict_dir = dict_dir

@@ -74,14 +74,28 @@ import matplotlib.pyplot as plt
 # plt.show()
 
 
-probs = torch.Tensor([0.0, 0.5, 0.3, 0.2])
-scores = torch.Tensor([0.8, 0.0, 0.1, 0.1])
+# probs = torch.Tensor([0.0, 0.5, 0.3, 0.2])
+# scores = torch.Tensor([0.8, 0.0, 0.1, 0.1])
+#
+# probs[scores>0.3] = 1.0
+# scores[scores==0]=1
+#
+# total_probs = F.softmax(torch.mul(probs, scores))
+# print(total_probs)
+#
+# total_probs = F.softmax(torch.add(probs, scores))
+# print(total_probs)
 
-probs[scores>0.3] = 1.0
-scores[scores==0]=1
+# import pandas as pd
+# anes = pd.read_csv("/home/rohola/Downloads/ANES-elfardy-mdiab-ccb-dataset/*SEM-Split/ANES-AMT-*SEM-Test.csv", sep='\t')
+#
+# for index, row in anes.iterrows():
+#     for col_name in anes.columns.values:
+#         print(row[col_name])
+#     print("##################")
 
-total_probs = F.softmax(torch.mul(probs, scores))
-print(total_probs)
 
-total_probs = F.softmax(torch.add(probs, scores))
-print(total_probs)
+import spacy
+
+nlp = spacy.load("en_core_web_sm")
+nlp
