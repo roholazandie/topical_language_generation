@@ -40,12 +40,12 @@ def visualize_semantic_netwrok(config, topics, visualize_method='plotly'):
 
 def get_semantic_network(config, topics):
     graph = nx.Graph()
-    for topic in topics:
+    for i, topic in enumerate(topics):
         for (word1, prob1) in topic:
             for (word2, prob2) in topic:
                 if word1 != word2 and abs(prob1) * abs(prob2) > config.threshold:
                     graph.add_edge(word1, word2, weight=abs(prob1) * abs(prob2) * 1000)
-                    graph.add_node(word1, importance=abs(prob1) * config.node_size)
-                    graph.add_node(word2, importance=abs(prob2) * config.node_size)
+                    graph.add_node(word1, importance=abs(prob1) * config.node_size, color_code=i)
+                    graph.add_node(word2, importance=abs(prob2) * config.node_size, color_code=i)
 
     return graph

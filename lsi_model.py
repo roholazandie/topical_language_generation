@@ -30,6 +30,7 @@ class LSIModel:
         #self._start()
 
     def _start(self):
+        self._clear_cache()
         self._prepare_dataset()
         self._run_model()
 
@@ -50,7 +51,8 @@ class LSIModel:
         # we certainly don't need lemmatization or stemmization because of the tokenizer we are using we probably don't need lowering
         #stop_words = list(STOP_WORDS) + ['Ġ'+ w for w in STOP_WORDS]
         #self.dictionary.filter_tokens(stop_words)
-        self.dictionary.filter_extremes(no_below=20, no_above=0.2)
+        self.dictionary.filter_extremes(no_below=self.config.no_below,
+                                        no_above=self.config.no_above)
         self.corpus = [self.dictionary.doc2bow(doc) for doc in docs]
 
     def _run_model(self):
@@ -68,8 +70,12 @@ class LSIModel:
         if not os.path.isfile(self.topic_top_words_file):
             if not num_words:
                 num_words = len(self.dictionary)
+            try:
+                lsi_model = self.lsi_model
+            except:
+                lsi_model = self.get_model()
 
-            topic_words = self.lsi_model.show_topics(self.config.num_topics,
+            topic_words = lsi_model.show_topics(self.config.num_topics,
                                                      num_words=num_words,
                                                      formatted=False)
             pickle.dump(topic_words, open(self.topic_top_words_file, 'wb'))

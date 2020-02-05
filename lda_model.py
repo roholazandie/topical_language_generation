@@ -1,9 +1,13 @@
 from gensim.utils import ClippedCorpus
-
+from datasets.anes_dataset import AnesDataset
+from datasets.congress_dataset import CongressDataset
 from datasets.nytimes_dataset import NYTimesDataset
 from datasets.topical_dataset import TopicalDataset
 from gensim.models import LdaModel
 from gensim.corpora import Dictionary, MmCorpus
+import gensim
+import logging
+gensim.logger.setLevel(logging.ERROR)
 
 from datasets.wikidata import WikiData, WikiCorpus
 from dictionary import TopicalDictionary
@@ -37,12 +41,21 @@ class LDAModel:
 
 
     def _start(self):
+        self._clear_caches()
         self._prepare_dataset()
         self._run_model()
 
     def _prepare_dataset(self):
-        #dataset = TopicalDataset(self.config.dataset_dir, self.tokenizer)
-        dataset = NYTimesDataset(self.config.dataset_dir, self.tokenizer)
+        if self.config.name == "alexa":
+            dataset = TopicalDataset(self.config.dataset_dir, self.tokenizer)
+        elif self.config.name == "nytimes":
+            dataset = NYTimesDataset(self.config.dataset_dir, self.tokenizer)
+        elif self.config.name == "anes":
+            dataset = AnesDataset(self.config.dataset_dir, self.tokenizer)
+        elif self.config.name == "congress":
+            dataset = CongressDataset(self.config.dataset_dir, self.tokenizer)
+        else:
+            raise ValueError("unknown dataset")
 
         docs = [doc for doc in dataset]
         self.dictionary = Dictionary(docs)
@@ -79,7 +92,7 @@ class LDAModel:
     def get_corpus(self):
         return pickle.load(open(self.corpus_file, 'rb'))
 
-    def clear_cache(self):
+    def _clear_caches(self):
         all_cached_files = [self.all_topic_tokens_file,
                             self.psi_matrix_file,
                             self.theta_matrix_file]
@@ -89,9 +102,13 @@ class LDAModel:
             except:
                 pass
 
-    def get_all_topic_tokens(self):
+    def get_all_topic_tokens(self, num_words=10):
         if not os.path.isfile(self.all_topic_tokens_file):
-            tokenid_probs = [self.model.get_topic_terms(i) for i in range(self.config.num_topics)]
+            try:
+                lda_model = self.model
+            except:
+                lda_model = self.get_model()
+            tokenid_probs = [lda_model.get_topic_terms(i, topn=num_words) for i in range(self.config.num_topics)]
             all_topic_tokens = [[(self.id2token[i], p) for i, p in tokenid_probs_topic] for tokenid_probs_topic in
                                 tokenid_probs]
             pickle.dump(all_topic_tokens, open(self.all_topic_tokens_file, 'wb'))

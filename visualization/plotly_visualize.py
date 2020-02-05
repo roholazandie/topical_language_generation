@@ -3,6 +3,63 @@ import networkx as nx
 from networkx.drawing.nx_agraph import graphviz_layout
 import plotly.graph_objs as go
 import math
+from matplotlib import colors
+import matplotlib.cm as cm
+
+colorscale1=[
+        # Let first 10% (0.1) of the values have color rgb(0, 0, 0)
+        [0, "rgb(0, 0, 0)"],
+        [0.1, "rgb(0, 0, 0)"],
+
+        # Let values between 10-20% of the min and max of z
+        # have color rgb(20, 20, 20)
+        [0.1, "rgb(20, 20, 20)"],
+        [0.2, "rgb(20, 20, 20)"],
+
+        # Values between 20-30% of the min and max of z
+        # have color rgb(40, 40, 40)
+        [0.2, "rgb(40, 40, 40)"],
+        [0.3, "rgb(40, 40, 40)"],
+
+        [0.3, "rgb(60, 60, 60)"],
+        [0.4, "rgb(60, 60, 60)"],
+
+        [0.4, "rgb(80, 80, 80)"],
+        [0.5, "rgb(80, 80, 80)"],
+
+        [0.5, "rgb(100, 100, 100)"],
+        [0.6, "rgb(100, 100, 100)"],
+
+        [0.6, "rgb(120, 120, 120)"],
+        [0.7, "rgb(120, 120, 120)"],
+
+        [0.7, "rgb(140, 140, 140)"],
+        [0.8, "rgb(140, 140, 140)"],
+
+        [0.8, "rgb(160, 160, 160)"],
+        [0.9, "rgb(160, 160, 160)"],
+
+        [0.9, "rgb(180, 180, 180)"],
+        [1.0, "rgb(180, 180, 180)"]
+    ]
+
+
+def get_color_scale_range(n):
+    lst = list(range(n))
+
+    minima = min(lst)
+    maxima = max(lst)
+
+    norm = colors.Normalize(vmin=minima, vmax=maxima, clip=True)
+    mapper = cm.ScalarMappable(norm=norm, cmap=cm.tab10)
+
+    color_scale = []
+    for v in lst:
+        print(mapper.to_rgba(v))
+        color_scale.append([v / n, str("rgb" + str(mapper.to_rgba(v)[:-1]))])
+        color_scale.append([(v+1) / n, str("rgb" + str(mapper.to_rgba(v)[:-1]))])
+
+    return color_scale
 
 
 def visualize(config, G, node_size):
@@ -33,6 +90,9 @@ def visualize(config, G, node_size):
     #     print(weight)
     #     edge_trace['line']['width'].append(weight)
 
+    num_topics = len(set([x[1]['color_code'] for x in G.nodes(data=True)]))
+    color_scale = get_color_scale_range(num_topics)
+
     node_trace = go.Scatter(
         x=[],
         y=[],
@@ -58,7 +118,8 @@ def visualize(config, G, node_size):
             #              'speed', 'sunset', 'sunsetdark', 'teal', 'tealgrn', 'tealrose',
             #              'tempo', 'temps', 'thermal', 'tropic', 'turbid', 'twilight',
             #              'viridis', 'ylgn', 'ylgnbu', 'ylorbr', 'ylorrd'
-            colorscale=config.color_scale,
+            #colorscale=config.color_scale,
+            colorscale=color_scale,
             reversescale=True,
             color=[],
             size=[],
@@ -75,8 +136,12 @@ def visualize(config, G, node_size):
         node_trace['x'] += (x,)
         node_trace['y'] += (y,)
 
-    for i, adjacencies in G.adjacency():
-        node_trace['marker']['color'] += (len(adjacencies),)
+    # for i, adjacencies in G.adjacency():
+    #     node_trace['marker']['color'] += (len(adjacencies),)
+
+    for node in G.nodes(data=True):
+        node_trace['marker']['color'] += (node[1]['color_code'],)
+
 
     for node in G.nodes():
         node_trace['text'] += (inv_map[node],)

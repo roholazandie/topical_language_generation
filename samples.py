@@ -95,7 +95,4 @@ import matplotlib.pyplot as plt
 #     print("##################")
 
 
-import spacy
 
-nlp = spacy.load("en_core_web_sm")
-nlp

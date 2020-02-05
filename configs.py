@@ -10,6 +10,8 @@ class LDAConfig:
                  dict_dir="",
                  topics_file="",
                  topic_top_words_file="",
+                 no_below="",
+                 no_above="",
                  tokenizer="",
                  alpha="auto",
                  eta="auto",
@@ -25,6 +27,8 @@ class LDAConfig:
         self.dict_dir = dict_dir
         self.topics_file = topics_file
         self.topic_top_words_file = topic_top_words_file
+        self.no_below = no_below
+        self.no_above = no_above
         self.tokenizer = tokenizer
         self.alpha = alpha
         self.eta = eta
@@ -56,6 +60,8 @@ class LDAWikiConfig:
                  cached_dir="",
                  topics_file="",
                  topic_top_words_file="",
+                 no_below="",
+                 no_above="",
                  tokenizer="",
                  alpha="auto",
                  eta="auto",
@@ -69,6 +75,8 @@ class LDAWikiConfig:
         self.cached_dir = cached_dir
         self.topics_file = topics_file
         self.topic_top_words_file = topic_top_words_file
+        self.no_below = no_below
+        self.no_above = no_above
         self.tokenizer = tokenizer
         self.alpha = alpha
         self.eta = eta
@@ -143,6 +151,8 @@ class LSIConfig:
                  dict_dir="",
                  topics_file="",
                  topic_top_words_file="",
+                 no_below="",
+                 no_above="",
                  tokenizer="",
                  num_topics="",
                  chunksize="",
@@ -156,6 +166,8 @@ class LSIConfig:
         self.dict_dir = dict_dir
         self.topics_file = topics_file
         self.topic_top_words_file = topic_top_words_file
+        self.no_below = no_below
+        self.no_above = no_above
         self.tokenizer = tokenizer
         self.num_topics = num_topics
         self.chunksize = chunksize

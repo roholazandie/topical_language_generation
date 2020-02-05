@@ -3,22 +3,13 @@ from dataclasses import dataclass
 from visualization.topic_modeling_semantic_network import visualize_semantic_netwrok
 from lsi_model import LSIModel
 
-@dataclass
-class config:
-    dimension: int = 2
-    threshold: float = 0.001
-    node_size: float = 30
-    color_scale: str = "Viridis"
-    title: str = "lsi_vis"
-    out_file_name: str = "/home/rohola/codes/topical_language_generation/caches/congress_lsi_caches/lsi_viz.html"
 
-config_file = "configs/alexa_lsi_config.json"
+#config_file = "configs/alexa_lsi_config.json"
 #config_file = "configs/nytimes_lsi_config.json"
 #config_file = "configs/anes_lsi_config.json"
-#config_file = "configs/congress_lsi_config.json"
+config_file = "configs/congress_lsi_config.json"
 
 lsi = LSIModel(config_file=config_file)
-#lsi._clear_cache()
 
 lsi._start()
 
@@ -29,6 +20,17 @@ topic_words = [[(t[0].strip('Ġ'), t[1]) for t in tw] for tw in topic_words]
 for topic in topic_words:
     print(topic)
 
+
+
+#todo remove dataclass and replace it with VisualizationConfig class
+@dataclass
+class config:
+    dimension: int = 2
+    threshold: float = 0.001
+    node_size: float = 30
+    color_scale: str = "Viridis"
+    title: str = "lsi_vis"
+    out_file_name: str = lsi.config.cached_dir+"/lsi_viz.html"
 
 
 visualize_method = ""
