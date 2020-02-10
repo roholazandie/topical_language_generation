@@ -806,9 +806,9 @@ class PreTrainedModel(nn.Module):
             return total_probs
 
         if method == "method1":
-            alpha = 0.1
+            gamma = 0.1
             token_probs = F.softmax(logits, dim=-1)
-            total_probs = token_probs + alpha*scores
+            total_probs = token_probs + gamma*scores
             return total_probs
         elif method == "method2":
             # find the index of important token: those that are responsible for the 0.7 of the whole
@@ -835,8 +835,8 @@ class PreTrainedModel(nn.Module):
             #todo cut the scores based on probs(?)
             print(logits[logits != -float("inf")].numpy().min())
             #np.unique((F.softmax(torch.log(scores)).numpy()>0.01), return_counts=True)
-            #alpha = 7 #this is a good value
-            alpha = 5 #higher values of alpha corresponds to more on topic
+            #gamma = 7 #this is a good value
+            gamma = 5 #higher values of gamma corresponds to more on topic
             LOGIT_THRESHOLD = -100 # smaller values of Threshold is more on topic
             logscores = torch.log(scores)
             indices = logits < LOGIT_THRESHOLD#todo cut logits relatively not absolutely
@@ -853,7 +853,7 @@ class PreTrainedModel(nn.Module):
                 #plt.hist(logscore2, bins=100, color='y')
                 #plt.show()
 
-            total_probs = F.softmax(logits + alpha * logscores, dim=-1)
+            total_probs = F.softmax(logits + gamma * logscores, dim=-1)
             if any(torch.isnan(total_probs)):
                 total_probs = F.softmax(logits, dim=-1)
 
@@ -1250,7 +1250,7 @@ class PreTrainedModel(nn.Module):
 
         ##########this part need to be removed
         from lsi_model import LSIModel
-        lsi_config_file = "configs/alexa_lsi_config.json"
+        lsi_config_file = "configs/congress_lsi_config.json"
         lsi_model = LSIModel(lsi_config_file)
         topic_word_matrix = lsi_model.get_topic_words_matrix()
         tokenizer = lsi_model.tokenizer
@@ -1291,7 +1291,7 @@ class PreTrainedModel(nn.Module):
             ########################
 
             # we should choose topics randomly with theta
-            topic_probs = torch.tensor(np.abs(topic_word_matrix[0, :]))  # zero'th topic
+            topic_probs = torch.tensor(np.abs(topic_word_matrix[4, :]))  # zero'th topic
             total_probs = self.fusion(next_token_logits.squeeze(0), topic_probs, method="method3")
 
 

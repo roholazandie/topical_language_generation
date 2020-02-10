@@ -6,43 +6,6 @@ import math
 from matplotlib import colors
 import matplotlib.cm as cm
 
-colorscale1=[
-        # Let first 10% (0.1) of the values have color rgb(0, 0, 0)
-        [0, "rgb(0, 0, 0)"],
-        [0.1, "rgb(0, 0, 0)"],
-
-        # Let values between 10-20% of the min and max of z
-        # have color rgb(20, 20, 20)
-        [0.1, "rgb(20, 20, 20)"],
-        [0.2, "rgb(20, 20, 20)"],
-
-        # Values between 20-30% of the min and max of z
-        # have color rgb(40, 40, 40)
-        [0.2, "rgb(40, 40, 40)"],
-        [0.3, "rgb(40, 40, 40)"],
-
-        [0.3, "rgb(60, 60, 60)"],
-        [0.4, "rgb(60, 60, 60)"],
-
-        [0.4, "rgb(80, 80, 80)"],
-        [0.5, "rgb(80, 80, 80)"],
-
-        [0.5, "rgb(100, 100, 100)"],
-        [0.6, "rgb(100, 100, 100)"],
-
-        [0.6, "rgb(120, 120, 120)"],
-        [0.7, "rgb(120, 120, 120)"],
-
-        [0.7, "rgb(140, 140, 140)"],
-        [0.8, "rgb(140, 140, 140)"],
-
-        [0.8, "rgb(160, 160, 160)"],
-        [0.9, "rgb(160, 160, 160)"],
-
-        [0.9, "rgb(180, 180, 180)"],
-        [1.0, "rgb(180, 180, 180)"]
-    ]
-
 
 def get_color_scale_range(n):
     lst = list(range(n))
@@ -55,7 +18,6 @@ def get_color_scale_range(n):
 
     color_scale = []
     for v in lst:
-        print(mapper.to_rgba(v))
         color_scale.append([v / n, str("rgb" + str(mapper.to_rgba(v)[:-1]))])
         color_scale.append([(v+1) / n, str("rgb" + str(mapper.to_rgba(v)[:-1]))])
 
@@ -125,7 +87,7 @@ def visualize(config, G, node_size):
             size=[],
             colorbar=dict(
                 thickness=15,
-                title='Node Connections',
+                title='Topics',
                 xanchor='left',
                 titleside='right'
             ),

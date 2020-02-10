@@ -94,5 +94,8 @@ import matplotlib.pyplot as plt
 #         print(row[col_name])
 #     print("##################")
 
+import json
 
-
+with open("/media/rohola/data/sample_texts/newsgroup/newsgroups.json") as fr:
+    newsgroup = json.load(fr)
+    a = 1

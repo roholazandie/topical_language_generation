@@ -35,7 +35,7 @@ class SpacyTokenizer(Tokenizer):
         self._dictionary = pickle.load(open(path.join(self.dict_dir, "dict.p"), 'rb'))
         return self._dictionary
 
-    def encode(self, text):
+    def tokenize(self, text):
         if self.preprocess:
             docs_tokens = [token.text.lower() for token in self.nlp(text) if not token.is_stop]
         else:

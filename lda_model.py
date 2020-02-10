@@ -3,7 +3,7 @@ from datasets.anes_dataset import AnesDataset
 from datasets.congress_dataset import CongressDataset
 from datasets.nytimes_dataset import NYTimesDataset
 from datasets.topical_dataset import TopicalDataset
-from gensim.models import LdaModel
+from gensim.models import LdaModel, CoherenceModel
 from gensim.corpora import Dictionary, MmCorpus
 import gensim
 import logging
@@ -33,6 +33,8 @@ class LDAModel:
             raise ValueError("Tokenizer not recognized")
         self.model_file = os.path.join(self.config.cached_dir, "model.p")
         self.corpus_file = os.path.join(self.config.cached_dir, "corpus.p")
+        self.docs_file = os.path.join(self.config.cached_dir, "docs.p")
+        self.dictionary_file = os.path.join(self.config.cached_dir, "dictionary.p")
         self.all_topic_tokens_file = os.path.join(self.config.cached_dir, "all_topic_tokens.p")
         self.psi_matrix_file = os.path.join(self.config.cached_dir, "psi_matrix.p")
         self.theta_matrix_file = os.path.join(self.config.cached_dir, "theta_matrix.p")
@@ -57,21 +59,22 @@ class LDAModel:
         else:
             raise ValueError("unknown dataset")
 
-        docs = [doc for doc in dataset]
-        self.dictionary = Dictionary(docs)
+        self.docs = [doc for doc in dataset]
+        pickle.dump(self.docs, open(self.docs_file, 'wb'))
+        self.dictionary = Dictionary(self.docs)
         self.dictionary.filter_extremes(no_below=50, no_above=0.4)
+        pickle.dump(self.dictionary, open(self.dictionary_file, 'wb'))
         # Bag-of-words representation of the documents.
-        self.corpus = [self.dictionary.doc2bow(doc) for doc in docs]
+        self.corpus = [self.dictionary.doc2bow(doc) for doc in self.docs]
 
-        corpus_file = os.path.join(self.config.cached_dir, "corpus.p")
-        pickle.dump(self.corpus, open(corpus_file, 'wb'))
+        pickle.dump(self.corpus, open(self.corpus_file, 'wb'))
 
         temp = self.dictionary[0]  # This is only to "load" the dictionary.
         self.id2token = self.dictionary.id2token
 
 
     def _run_model(self):
-        self.model = LdaModel(
+        self.lda_model = LdaModel(
             corpus=self.corpus,
             id2word=self.id2token,
             chunksize=self.config.chunksize,
@@ -83,7 +86,7 @@ class LDAModel:
             eval_every=self.config.eval_every
         )
 
-        self.model.save(self.model_file)
+        self.lda_model.save(self.model_file)
 
 
     def get_model(self):
@@ -91,6 +94,12 @@ class LDAModel:
 
     def get_corpus(self):
         return pickle.load(open(self.corpus_file, 'rb'))
+
+    def get_dictionary(self):
+        return pickle.load(open(self.dictionary_file, 'rb'))
+
+    def get_docs(self):
+        return pickle.load(open(self.docs_file, 'rb'))
 
     def _clear_caches(self):
         all_cached_files = [self.all_topic_tokens_file,
@@ -105,7 +114,7 @@ class LDAModel:
     def get_all_topic_tokens(self, num_words=10):
         if not os.path.isfile(self.all_topic_tokens_file):
             try:
-                lda_model = self.model
+                lda_model = self.lda_model
             except:
                 lda_model = self.get_model()
             tokenid_probs = [lda_model.get_topic_terms(i, topn=num_words) for i in range(self.config.num_topics)]
@@ -120,9 +129,9 @@ class LDAModel:
     def get_psi_matrix(self):
         if type(self.tokenizer) == TransformerGPT2Tokenizer:
             if not os.path.isfile(self.psi_matrix_file):
-                self._start()
+                #self._start()
                 psi_matrix = np.zeros((self.config.num_topics, self.tokenizer.tokenizer.vocab_size))
-                matrix = self.model.get_topics()  # a matrix of k x V' (num_topic x selected_vocab_size)
+                matrix = self.lda_model.get_topics()  # a matrix of k x V' (num_topic x selected_vocab_size)
                 for i in range(len(self.id2token)):
                     j = self.tokenizer.tokenizer.convert_tokens_to_ids(self.id2token[i])
                     psi_matrix[:, j] = matrix[:, i]
@@ -150,7 +159,7 @@ class LDAModel:
                     for x in v:
                         gpt_to_spacy.setdefault(x, []).append(k)
 
-                matrix = self.model.get_topics()
+                matrix = self.lda_model.get_topics()
 
                 psi_matrix = np.zeros((self.config.num_topics, len(gpt_tokenizer.tokenizer)))
                 # take mean of the tokenized items by spacy
@@ -172,7 +181,7 @@ class LDAModel:
             num_documents = len(self.corpus)
             theta_matrix = np.zeros((num_documents, self.config.num_topics))
             for i, c in enumerate(self.corpus):
-                for j, p in self.model.get_document_topics(c):
+                for j, p in self.lda_model.get_document_topics(c):
                     theta_matrix[i, j] = p
 
             pickle.dump(theta_matrix, open(self.theta_matrix_file, 'wb'))
@@ -181,20 +190,68 @@ class LDAModel:
 
         return theta_matrix
 
+    def get_coherence_score(self, method="u_mass"):
+        try:
+            model = self.lda_model
+        except:
+            model = self.get_model()
 
+        try:
+            corpus = self.corpus
+        except:
+            corpus = self.get_corpus()
+
+        try:
+            dictionary = self.dictionary
+        except:
+            dictionary = self.get_dictionary()
+
+        try:
+            docs = self.docs
+        except:
+            docs = self.get_docs()
+
+        if method == "u_mass":
+            cm = CoherenceModel(model=model, corpus=corpus, coherence='u_mass')
+            coherence = cm.get_coherence()
+
+        elif method == "c_w2v":
+            cm = CoherenceModel(model=model, texts=docs, dictionary=dictionary, coherence=method)
+            coherence = cm.get_coherence()
+        else:
+            raise ValueError("unknown method")
+
+        return coherence
 
 
 if __name__ == "__main__":
-    #config_file = "configs/alexa_lda_config.json"
-    config_file = "configs/nytimes_lda_config.json"
+    config_file = "configs/alexa_lda_config.json" #0.5320263
+    #config_file = "configs/nytimes_lda_config.json" #0.63788706
 
-    lda = LDAModel(config_file=config_file)
+    # all_coherences = []
+    # for i in range(5, 20):
+    #     lda = LDAModel(config_file=config_file)
+    #     lda.config.num_topics = i
+    #     lda._start()
+    #     #lda._start()
+    #     # topic_words = lda.model.show_topic(0) # show 0th topic words
+    #     # psi = lda.get_psi_matrix()
+    #     # theta = lda.get_theta_matrix()
+    #     # all_topic_tokens = lda.get_all_topic_tokens()
+    #     # for tt in all_topic_tokens:
+    #     #     print(tt)
+    #
+    #     coherence_score = lda.get_coherence_score()
+    #     all_coherences.append((i, coherence_score))
+    #     print(coherence_score)
+    #
+    # print(all_coherences)
+    all_scores = []
+    for i in range(3, 20):
+        lda = LDAModel(config_file=config_file)
+        lda.config.num_topics = i
+        lda._start()
+        c_w2v_score = lda.get_coherence_score(method="c_w2v")
+        all_scores.append((i, c_w2v_score))
 
-    # topic_words = lda.model.show_topic(0) # show 0th topic words
-    psi = lda.get_psi_matrix()
-    theta = lda.get_theta_matrix()
-    all_topic_tokens = lda.get_all_topic_tokens()
-    for tt in all_topic_tokens:
-        print(tt)
-
-    # print(theta)
+    print(all_scores)

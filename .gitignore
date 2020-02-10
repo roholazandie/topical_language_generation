@@ -157,3 +157,4 @@ raw_wikipedia/
 configs/*
 results/*
 caches/*
+wandb/*

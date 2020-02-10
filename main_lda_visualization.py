@@ -4,10 +4,10 @@ from visualization.topic_modeling_semantic_network import visualize_semantic_net
 from lda_model import LDAModel
 
 
-config_file = "configs/alexa_lda_config.json"
+#config_file = "configs/alexa_lda_config.json"
 #config_file = "configs/nytimes_lda_config.json"
 #config_file = "configs/anes_lda_config.json"
-#config_file = "configs/congress_lda_config.json"
+config_file = "configs/congress_lda_config.json"
 
 lda = LDAModel(config_file=config_file)
 
@@ -29,8 +29,8 @@ class config:
     threshold: float = 0.00001
     node_size: float = 30
     color_scale: str = "Viridis"
-    title: str = "lsi_vis"
-    out_file_name: str = lda.config.cached_dir + "/lsi_viz.html"
+    title: str = "LDA"
+    out_file_name: str = lda.config.cached_dir + "/lda_viz.html"
 
 
 visualize_method = ""

@@ -7,11 +7,11 @@ from lsi_model import LSIModel
 #config_file = "configs/alexa_lsi_config.json"
 #config_file = "configs/nytimes_lsi_config.json"
 #config_file = "configs/anes_lsi_config.json"
-config_file = "configs/congress_lsi_config.json"
+config_file = "configs/newsgroup_lsi_config.json"
 
-lsi = LSIModel(config_file=config_file)
+lsi = LSIModel(config_file=config_file, build=True)
 
-lsi._start()
+#lsi._start()
 
 tw = lsi.get_topic_words(num_words=15)
 topic_words = [t[1] for t in tw]
@@ -29,7 +29,7 @@ class config:
     threshold: float = 0.001
     node_size: float = 30
     color_scale: str = "Viridis"
-    title: str = "lsi_vis"
+    title: str = "LSI"
     out_file_name: str = lsi.config.cached_dir+"/lsi_viz.html"
 
 
