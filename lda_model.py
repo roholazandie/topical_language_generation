@@ -66,7 +66,6 @@ class LDAModel:
         pickle.dump(self.dictionary, open(self.dictionary_file, 'wb'))
         # Bag-of-words representation of the documents.
         self.corpus = [self.dictionary.doc2bow(doc) for doc in self.docs]
-
         pickle.dump(self.corpus, open(self.corpus_file, 'wb'))
 
         temp = self.dictionary[0]  # This is only to "load" the dictionary.
@@ -129,11 +128,12 @@ class LDAModel:
     def get_psi_matrix(self):
         if type(self.tokenizer) == TransformerGPT2Tokenizer:
             if not os.path.isfile(self.psi_matrix_file):
-                #self._start()
+                id2token, lda_model = self.extract_model_vars()
+
                 psi_matrix = np.zeros((self.config.num_topics, self.tokenizer.tokenizer.vocab_size))
-                matrix = self.lda_model.get_topics()  # a matrix of k x V' (num_topic x selected_vocab_size)
-                for i in range(len(self.id2token)):
-                    j = self.tokenizer.tokenizer.convert_tokens_to_ids(self.id2token[i])
+                matrix = lda_model.get_topics()  # a matrix of k x V' (num_topic x selected_vocab_size)
+                for i in range(len(id2token)):
+                    j = self.tokenizer.tokenizer.convert_tokens_to_ids(id2token[i])
                     psi_matrix[:, j] = matrix[:, i]
 
                 pickle.dump(psi_matrix, open(self.psi_matrix_file, 'wb'))
@@ -176,12 +176,49 @@ class LDAModel:
 
         return psi_matrix
 
+    def extract_model_vars(self):
+        try:
+            lda_model = self.lda_model
+        except:
+            if os.path.isfile(self.model_file):
+                lda_model = self.get_model()
+            else:
+                self._start()
+                lda_model = self.lda_model
+
+        try:
+            id2token = self.id2token
+        except:
+            if os.path.isfile(self.dictionary_file):
+                dictionary = self.get_dictionary()
+                id2token = dictionary.id2token
+            else:
+                self._start()
+                id2token = self.id2token
+
+        return id2token, lda_model
+
     def get_theta_matrix(self):
         if not os.path.isfile(self.theta_matrix_file):
-            num_documents = len(self.corpus)
+            try:
+                corpus = self.corpus
+            except:
+                corpus = self.get_corpus()
+
+            try:
+                lda_model = self.lda_model
+            except:
+                try:
+                    lda_model = self.get_model()
+                except:
+                    self._start()
+                    lda_model = self.lda_model
+
+
+            num_documents = len(corpus)
             theta_matrix = np.zeros((num_documents, self.config.num_topics))
-            for i, c in enumerate(self.corpus):
-                for j, p in self.lda_model.get_document_topics(c):
+            for i, c in enumerate(corpus):
+                for j, p in lda_model.get_document_topics(c):
                     theta_matrix[i, j] = p
 
             pickle.dump(theta_matrix, open(self.theta_matrix_file, 'wb'))

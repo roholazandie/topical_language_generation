@@ -33,12 +33,5 @@ class config:
     out_file_name: str = lda.config.cached_dir + "/lda_viz.html"
 
 
-visualize_method = ""
-if config.dimension == 2:
-    visualize_method = 'plotly'
-elif config.dimension == 3:
-    visualize_method = 'plotly3d'
-else:
-    raise("Wrong dimension, can accept only 2 or 3")
 
-visualize_semantic_netwrok(config, topic_words, visualize_method=visualize_method)
+visualize_semantic_netwrok(config, topic_words)

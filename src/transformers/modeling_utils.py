@@ -559,6 +559,7 @@ class PreTrainedModel(nn.Module):
             psi=None,
             theta=None,
             topic_word_matrix=None,
+            tokenizer=None,
             num_beams=None,
             temperature=None,
             top_k=None,
@@ -719,6 +720,7 @@ class PreTrainedModel(nn.Module):
             output = self._generate_topical_lda(
                 input_ids,
                 psi,
+                tokenizer,
                 cur_len,
                 max_length,
                 temperature,
@@ -750,6 +752,7 @@ class PreTrainedModel(nn.Module):
             output = self._generate_topical_lsi(
                 input_ids,
                 topic_word_matrix,
+                tokenizer,
                 cur_len,
                 max_length,
                 temperature,
@@ -992,6 +995,7 @@ class PreTrainedModel(nn.Module):
             self,
             input_ids,
             psi,
+            tokenizer,
             cur_len,
             max_length,
             temperature,
@@ -1004,12 +1008,12 @@ class PreTrainedModel(nn.Module):
     ):
 
         ##########this part need to be removed, we just have to pass psi and theta
-        from lda_model import LDAModel
-        lda_config_file = "configs/alexa_lda_config.json"
-        lda_model = LDAModel(lda_config_file)
-        theta = lda_model.get_theta_matrix()
-        psi = lda_model.get_psi_matrix()
-        tokenizer = lda_model.tokenizer
+        # from lda_model import LDAModel
+        # lda_config_file = "configs/alexa_lda_config.json"
+        # lda_model = LDAModel(lda_config_file)
+        # theta = lda_model.get_theta_matrix()
+        # psi = lda_model.get_psi_matrix()
+        # tokenizer = lda_model.tokenizer
         ###########################################################################
 
         # current position / max lengths / length of generated sentences / unfinished sentences
@@ -1047,7 +1051,7 @@ class PreTrainedModel(nn.Module):
             ########################
 
             # we should choose topics randomly with theta
-            topic_probs = torch.tensor(psi[4, :])  # zero'th topic
+            topic_probs = torch.tensor(psi[4, :])
             total_probs = self.fusion(next_token_logits.squeeze(0), topic_probs, method="method3")
 
             # post_token_ids = (total_probs > 0.001).nonzero().flatten().tolist()
@@ -1061,32 +1065,31 @@ class PreTrainedModel(nn.Module):
             # pre_minus_post_tokens = " ".join([tokenizer.tokenizer.convert_ids_to_tokens(j) for j in pre_minus_post])
             # print("pre minus post: ", pre_minus_post_tokens)
 
-            indices = np.where((token_probs[0, :] - total_probs) > 0.01)[0]
-            pre_post_token_probs = [(tokenizer.tokenizer.convert_ids_to_tokens(j),
-                  round(total_probs[j].item(), 4)) for j in indices.tolist()]
-            pre_post_token_probs = sorted(pre_post_token_probs, key=lambda x: x[1], reverse=True)
-            pre_minus_post = " ".join([str(x) for x in pre_post_token_probs])
-            print("pre_minus_post", pre_minus_post)
-
-
-            indices = np.where((total_probs - token_probs[0, :]) > 0.01)[0]
-
-            post_pre_token_probs = [(tokenizer.tokenizer.convert_ids_to_tokens(j),
-                  round(total_probs[j].item(), 4)) for j in indices.tolist()]
-            post_pre_token_probs = sorted(post_pre_token_probs, key=lambda x: x[1], reverse=True)
-            post_minus_pre = " ".join([str(x) for x in post_pre_token_probs])
-            print("post_minus_pre", post_minus_pre)
-
-
-
             # Sample
-            print(total_probs.min())
             next_token = torch.multinomial(total_probs, num_samples=1).squeeze(0)
 
-            print("next token: ", tokenizer.tokenizer.convert_ids_to_tokens([next_token]))
-            print("prob of generated token before fusion", token_probs[0, next_token.item()].item())
-            print("prob of generated token after fusion: ", total_probs[next_token.item()].item())
-            print("======================================================")
+            if tokenizer:
+                indices = np.where((token_probs[0, :] - total_probs) > 0.01)[0]
+                pre_post_token_probs = [(tokenizer.tokenizer.convert_ids_to_tokens(j),
+                      round(total_probs[j].item(), 4)) for j in indices.tolist()]
+                pre_post_token_probs = sorted(pre_post_token_probs, key=lambda x: x[1], reverse=True)
+                pre_minus_post = " ".join([str(x) for x in pre_post_token_probs])
+                print("pre_minus_post", pre_minus_post)
+
+
+                indices = np.where((total_probs - token_probs[0, :]) > 0.01)[0]
+
+                post_pre_token_probs = [(tokenizer.tokenizer.convert_ids_to_tokens(j),
+                      round(total_probs[j].item(), 4)) for j in indices.tolist()]
+                post_pre_token_probs = sorted(post_pre_token_probs, key=lambda x: x[1], reverse=True)
+                post_minus_pre = " ".join([str(x) for x in post_pre_token_probs])
+                print("post_minus_pre", post_minus_pre)
+                print("next token: ", tokenizer.tokenizer.convert_ids_to_tokens([next_token]))
+                print("prob of generated token before fusion", token_probs[0, next_token.item()].item())
+                print("prob of generated token after fusion: ", total_probs[next_token.item()].item())
+                print("======================================================")
+
+
             # update generations and finished sentences
             tokens_to_add = next_token * unfinished_sents + pad_token_id * (1 - unfinished_sents)
             input_ids = torch.cat([input_ids, tokens_to_add.unsqueeze(-1)], dim=-1)
@@ -1237,6 +1240,7 @@ class PreTrainedModel(nn.Module):
             self,
             input_ids,
             topic_word_matrix,
+            tokenizer,
             cur_len,
             max_length,
             temperature,
@@ -1249,11 +1253,11 @@ class PreTrainedModel(nn.Module):
     ):
 
         ##########this part need to be removed
-        from lsi_model import LSIModel
-        lsi_config_file = "configs/congress_lsi_config.json"
-        lsi_model = LSIModel(lsi_config_file)
-        topic_word_matrix = lsi_model.get_topic_words_matrix()
-        tokenizer = lsi_model.tokenizer
+        # from lsi_model import LSIModel
+        # lsi_config_file = "configs/congress_lsi_config.json"
+        # lsi_model = LSIModel(lsi_config_file)
+        # topic_word_matrix = lsi_model.get_topic_words_matrix()
+        # tokenizer = lsi_model.tokenizer
         ###########################################################################
 
         # current position / max lengths / length of generated sentences / unfinished sentences
@@ -1294,33 +1298,30 @@ class PreTrainedModel(nn.Module):
             topic_probs = torch.tensor(np.abs(topic_word_matrix[4, :]))  # zero'th topic
             total_probs = self.fusion(next_token_logits.squeeze(0), topic_probs, method="method3")
 
-
-            indices = np.where((token_probs[0, :] - total_probs) > 0.01)[0]
-            pre_post_token_probs = [(tokenizer.tokenizer.convert_ids_to_tokens(j),
-                  round(total_probs[j].item(), 4)) for j in indices.tolist()]
-            pre_post_token_probs = sorted(pre_post_token_probs, key=lambda x: x[1], reverse=True)
-            pre_minus_post = " ".join([str(x) for x in pre_post_token_probs])
-            print("pre_minus_post", pre_minus_post)
-
-
-            indices = np.where((total_probs - token_probs[0, :]) > 0.01)[0]
-
-            post_pre_token_probs = [(tokenizer.tokenizer.convert_ids_to_tokens(j),
-                  round(total_probs[j].item(), 4)) for j in indices.tolist()]
-            post_pre_token_probs = sorted(post_pre_token_probs, key=lambda x: x[1], reverse=True)
-            post_minus_pre = " ".join([str(x) for x in post_pre_token_probs])
-            print("post_minus_pre", post_minus_pre)
-
-
-
             # Sample
-            print(total_probs.min())
             next_token = torch.multinomial(total_probs, num_samples=1).squeeze(0)
 
-            print("next token: ", tokenizer.tokenizer.convert_ids_to_tokens([next_token]))
-            print("prob of generated token before fusion", token_probs[0, next_token.item()].item())
-            print("prob of generated token after fusion: ", total_probs[next_token.item()].item())
-            print("======================================================")
+            if tokenizer:
+                indices = np.where((token_probs[0, :] - total_probs) > 0.01)[0]
+                pre_post_token_probs = [(tokenizer.tokenizer.convert_ids_to_tokens(j),
+                      round(total_probs[j].item(), 4)) for j in indices.tolist()]
+                pre_post_token_probs = sorted(pre_post_token_probs, key=lambda x: x[1], reverse=True)
+                pre_minus_post = " ".join([str(x) for x in pre_post_token_probs])
+                print("pre_minus_post", pre_minus_post)
+
+
+                indices = np.where((total_probs - token_probs[0, :]) > 0.01)[0]
+
+                post_pre_token_probs = [(tokenizer.tokenizer.convert_ids_to_tokens(j),
+                      round(total_probs[j].item(), 4)) for j in indices.tolist()]
+                post_pre_token_probs = sorted(post_pre_token_probs, key=lambda x: x[1], reverse=True)
+                post_minus_pre = " ".join([str(x) for x in post_pre_token_probs])
+                print("post_minus_pre", post_minus_pre)
+                print("next token: ", tokenizer.tokenizer.convert_ids_to_tokens([next_token]))
+                print("prob of generated token before fusion", token_probs[0, next_token.item()].item())
+                print("prob of generated token after fusion: ", total_probs[next_token.item()].item())
+                print("======================================================")
+
             # update generations and finished sentences
             tokens_to_add = next_token * unfinished_sents + pad_token_id * (1 - unfinished_sents)
             input_ids = torch.cat([input_ids, tokens_to_add.unsqueeze(-1)], dim=-1)

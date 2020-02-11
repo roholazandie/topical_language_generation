@@ -12,3 +12,4 @@ sacremoses
 networkx
 plotly
 pygraphviz
+streamlit

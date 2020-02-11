@@ -24,7 +24,7 @@ def get_color_scale_range(n):
     return color_scale
 
 
-def visualize(config, G, node_size):
+def visualize(config, G, node_size, auto_open=True):
     keys = G.nodes()
     values = range(len(G.nodes()))
     dictionary = dict(zip(keys, values))
@@ -119,7 +119,7 @@ def visualize(config, G, node_size):
                         width=1400,
                         height=800,
                         hovermode='closest',
-                        margin=dict(b=20, l=350, r=5, t=200),
+                        margin=dict(b=10, l=0, r=150, t=10),
                         # family='Courier New, monospace', size=18, color='#7f7f7f',
                         annotations=[dict(
                             text="",
@@ -129,7 +129,9 @@ def visualize(config, G, node_size):
                         xaxis=go.layout.XAxis(showgrid=False, zeroline=False, showticklabels=False),
                         yaxis=go.layout.YAxis(showgrid=False, zeroline=False, showticklabels=False)))
 
-    offpy(fig, filename=config.out_file_name, auto_open=True, show_link=False)
+    offpy(fig, filename=config.out_file_name, auto_open=auto_open, show_link=False)
+
+    return fig
 
 
 def visualize_3d(config, G, node_sizes):
@@ -228,6 +230,8 @@ def visualize_3d(config, G, node_sizes):
     fig = go.Figure(data=[node_trace, edge_trace], layout=layout)
 
     offpy(fig, filename=config.out_file_name, auto_open=True, show_link=False)
+
+    return fig
 
 
 

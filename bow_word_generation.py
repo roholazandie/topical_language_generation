@@ -1,13 +1,12 @@
 from datasets.topical_dataset import TopicalDataset
 
-from topical_tokenizers import TransformerGPT2Tokenizer, SpacyTokenizer
+from topical_tokenizers import TransformerGPT2Tokenizer
 from gensim.models import LdaModel
 from gensim.corpora import Dictionary
 from configs import LDAConfig
-import matplotlib.pyplot as plt
 from pprint import pprint
 import numpy as np
-from evaluate import calculate_similarity
+from evaluation.similarity_measures import calculate_similarity
 
 
 def get_topic_model(config, dataset):

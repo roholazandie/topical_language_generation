@@ -54,10 +54,6 @@ class LSIModel:
 
         docs = [doc for doc in dataset]
         self.dictionary = Dictionary(docs)
-        # we certainly don't need lemmatization or stemmization because of the tokenizer we are using we probably don't need lowering
-        #removing stop words should be done in datareading stage
-        #stop_words = list(STOP_WORDS) + ['Ġ'+ w for w in STOP_WORDS]
-        #self.dictionary.filter_tokens(stop_words)
         self.dictionary.filter_extremes(no_below=self.config.no_below,
                                         no_above=self.config.no_above)
         self.corpus = [self.dictionary.doc2bow(doc) for doc in docs]
@@ -107,7 +103,11 @@ class LSIModel:
             try:
                 lsi_model = self.lsi_model
             except:
-                lsi_model = self.get_model()
+                try:
+                    lsi_model = self.get_model()
+                except:
+                    self._start()
+                    lsi_model = self.lsi_model
 
             topic_words = lsi_model.get_topics()  # K X V' (num_topics x selected_vocab_size)
             topic_word_matrix = np.zeros(

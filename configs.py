@@ -200,6 +200,9 @@ class GenerationConfig:
                  repetition_penalty="",
                  top_k="",
                  top_p="",
+                 method="",
+                 logit_threshold="",
+                 gamma="",
                  no_cuda="",
                  seed="",
                  stop_token=""):
@@ -212,6 +215,9 @@ class GenerationConfig:
         self.repetition_penalty = repetition_penalty
         self.top_k = top_k
         self.top_p = top_p
+        self.method = method
+        self.logit_threshold = logit_threshold
+        self.gamma = gamma
         self.no_cuda = no_cuda
         self.seed = seed
         self.stop_token = stop_token
@@ -285,6 +291,37 @@ class DatabaseConfig:
     @classmethod
     def from_dict(cls, json_object):
         config = DatabaseConfig()
+        for key in json_object:
+            config.__dict__[key] = json_object[key]
+        return config
+
+    @classmethod
+    def from_json_file(cls, json_file):
+        with open(json_file) as f:
+            config_json = f.read()
+
+        return cls.from_dict(json.loads(config_json))
+
+
+class PlotConfig:
+    def __init__(self,
+                 dimension="",
+                 threshold="",
+                 node_size="",
+                 color_scale="",
+                 title="",
+                 out_file_name=""
+                 ):
+        self.dimension = dimension
+        self.threshold = threshold
+        self.node_size = node_size
+        self.color_scale = color_scale
+        self.title = title
+        self.out_file_name = out_file_name
+
+    @classmethod
+    def from_dict(cls, json_object):
+        config = PlotConfig()
         for key in json_object:
             config.__dict__[key] = json_object[key]
         return config

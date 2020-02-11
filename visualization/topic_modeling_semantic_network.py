@@ -7,10 +7,18 @@ from networkx.drawing.nx_agraph import graphviz_layout
 from visualization import plotly_visualize as plotly
 
 
-def visualize_semantic_netwrok(config, topics, visualize_method='plotly'):
+def visualize_semantic_netwrok(config, topics, auto_open=True):
     graph = get_semantic_network(config, topics)
     weights = [graph[u][v]['weight'] for u, v in graph.edges()]
     node_size = nx.get_node_attributes(graph, 'importance').values()
+
+    visualize_method = ""
+    if config.dimension == 2:
+        visualize_method = 'plotly'
+    elif config.dimension == 3:
+        visualize_method = 'plotly3d'
+    else:
+        raise ("Wrong dimension, can accept only 2 or 3")
 
     if visualize_method == "networkx":
         # pos = nx.graphviz_layout(graph)
@@ -31,9 +39,9 @@ def visualize_semantic_netwrok(config, topics, visualize_method='plotly'):
         plt.axis('off')
         plt.show()
     elif visualize_method == "plotly":
-        plotly.visualize(config, graph, node_size)
+        return plotly.visualize(config, graph, node_size, auto_open)
     elif visualize_method == "plotly3d":
-        plotly.visualize_3d(config, graph, node_size)
+        return plotly.visualize_3d(config, graph, node_size)
     else:
         raise visualize_method + " not defined for visualize method. use networkx or plotly as visualize_method"
 
