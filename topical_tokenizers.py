@@ -3,7 +3,8 @@ from transformers import GPT2Tokenizer, GPT2TokenizerFast
 from collections import defaultdict
 import pickle
 from os import path
-
+from gensim.parsing.preprocessing import STOPWORDS
+from gensim.utils import simple_preprocess
 
 class Tokenizer:
     def __init__(self):
@@ -17,6 +18,15 @@ class Tokenizer:
 
     def save_dict(self):
         raise NotImplemented()
+
+
+class SimpleTokenizer(Tokenizer):
+    def __init__(self, dict_dir):
+        pass
+
+    def tokenize(self, text):
+        return [token for token in simple_preprocess(text) if token not in STOPWORDS]
+
 
 class SpacyTokenizer(Tokenizer):
     def __init__(self, dict_dir, preprocess=False):

@@ -8,7 +8,8 @@ import numpy as np
 import os
 import pickle
 from configs import LDAConfig, LDAWikiConfig
-from topical_tokenizers import SpacyTokenizer, TransformerGPT2Tokenizer
+from topical_tokenizers import SpacyTokenizer, TransformerGPT2Tokenizer, SimpleTokenizer
+
 
 class LDAModelWiki:
 
@@ -16,6 +17,8 @@ class LDAModelWiki:
         self.config = LDAWikiConfig.from_json_file(config_file)
         if self.config.tokenizer == "gpt":
             self.tokenizer = TransformerGPT2Tokenizer(self.config.cached_dir)
+        elif self.config.tokenizer == "simple":
+            self.tokenizer = SimpleTokenizer(self.config.cached_dir)
 
         self.wiki_dict_file = os.path.join(self.config.cached_dir, "wiki_dict")
         self.mm_corpus_file = os.path.join(self.config.cached_dir, "wiki_bow.mm")
@@ -32,7 +35,7 @@ class LDAModelWiki:
                 break
 
         dictionary_wiki = Dictionary(docs)
-        dictionary_wiki.filter_extremes(no_below=20, no_above=0.01)
+        dictionary_wiki.filter_extremes(no_below=100, no_above=0.01)
 
         dictionary_wiki.save(self.wiki_dict_file)
 
@@ -89,7 +92,11 @@ class LDAModelWiki:
     def get_psi_matrix(self):
         psi_matrix_file = os.path.join(self.config.cached_dir, "psi_matrix.p")
         if not os.path.isfile(psi_matrix_file):
-            model = self.get_model()
+            try:
+                model = self.model
+            except:
+                model = self.get_model()
+
             id2token_wiki = Dictionary.load(self.wiki_dict_file)
             temp = id2token_wiki[0]
             id2token = id2token_wiki.id2token
@@ -109,10 +116,11 @@ class LDAModelWiki:
 if __name__ == "__main__":
     config_file = "/home/rohola/codes/topical_language_generation/configs/wiki_lda_config.json"
     lda_model_wiki = LDAModelWiki(config_file)
-    lda_model_wiki._create_files_db()
+    #lda_model_wiki._create_files_db()
+    lda_model_wiki._create_files()
     lda_model_wiki._run_model()
     #m = lda_model_wiki.get_model()
-    #lda_model_wiki.get_psi_matrix()
+    lda_model_wiki.get_psi_matrix()
     topic_tokens = lda_model_wiki.get_all_topic_tokens()
     for tt in topic_tokens:
         print(tt)
