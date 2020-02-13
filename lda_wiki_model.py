@@ -117,10 +117,10 @@ if __name__ == "__main__":
     config_file = "/home/rohola/codes/topical_language_generation/configs/wiki_lda_config.json"
     lda_model_wiki = LDAModelWiki(config_file)
     #lda_model_wiki._create_files_db()
-    lda_model_wiki._create_files()
-    lda_model_wiki._run_model()
+    #lda_model_wiki._create_files()
+    #lda_model_wiki._run_model()
     #m = lda_model_wiki.get_model()
-    lda_model_wiki.get_psi_matrix()
+    #lda_model_wiki.get_psi_matrix()
     topic_tokens = lda_model_wiki.get_all_topic_tokens()
     for tt in topic_tokens:
         print(tt)
