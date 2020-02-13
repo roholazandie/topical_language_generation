@@ -79,7 +79,7 @@ class LDAModelWiki:
             dictionary_wiki = Dictionary.load(self.wiki_dict_file)
             temp = dictionary_wiki[0]
             id2token = dictionary_wiki.id2token
-            tokenid_probs = [model.get_topic_terms(i) for i in range(self.config.num_topics)]
+            tokenid_probs = [model.get_topic_terms(i, len(id2token)) for i in range(self.config.num_topics)]
             all_topic_tokens = [[(id2token[i], p) for i, p in tokenid_probs_topic] for tokenid_probs_topic in
                                 tokenid_probs]
             pickle.dump(all_topic_tokens, open(self.all_topic_tokens_file, 'wb'))
