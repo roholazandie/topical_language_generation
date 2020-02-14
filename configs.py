@@ -52,6 +52,9 @@ class LDAConfig:
 
         return cls.from_dict(json.loads(config_json))
 
+    def __str__(self):
+        return str(self.__dict__)
+
 
 class LDAWikiConfig:
 
@@ -200,7 +203,7 @@ class GenerationConfig:
                  repetition_penalty="",
                  top_k="",
                  top_p="",
-                 method="",
+                 fusion_method="",
                  logit_threshold="",
                  gamma="",
                  no_cuda="",
@@ -215,7 +218,7 @@ class GenerationConfig:
         self.repetition_penalty = repetition_penalty
         self.top_k = top_k
         self.top_p = top_p
-        self.method = method
+        self.fusion_method = fusion_method
         self.logit_threshold = logit_threshold
         self.gamma = gamma
         self.no_cuda = no_cuda

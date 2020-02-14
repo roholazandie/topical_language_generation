@@ -17,8 +17,8 @@ import os
 
 class LSIModel:
 
-    def __init__(self, config_file, build=False):
-        self.config = LSIConfig.from_json_file(config_file)
+    def __init__(self, config, build=False):
+        self.config = config
         if self.config.tokenizer == "spacy":
             self.tokenizer = SpacyTokenizer(self.config.cached_dir)
         elif self.config.tokenizer == "gpt":
@@ -166,19 +166,10 @@ if __name__ == "__main__":
     #config_file = "configs/nytimes_lsi_config.json" #-2.3255072569456896
     #config_file = "configs/anes_lsi_config.json" #-3.35591499048434
     config_file = "configs/congress_lsi_config.json" #-2.842185966368092
-
-    all_coherences = []
-    for i in range(3, 20):
-        lsi = LSIModel(config_file=config_file, build=False)
-        lsi.config.num_topics = i
-        lsi._start()
-        # tw = lsi.get_topic_words(num_words=10)
-        # topic_words = [t[1] for t in tw]
-        # for topic in topic_words:
-        #     print(topic)
-        # m = lsi.get_topic_words_matrix()
-        # print(m.shape)
-        coherence_score = lsi.get_coherence_score()
-        all_coherences.append((i, coherence_score))
-
-    print(all_coherences)
+    config = LSIConfig.from_json_file(config_file)
+    lsi = LSIModel(config=config, build=False)
+    lsi._start()
+    tw = lsi.get_topic_words(num_words=10)
+    topic_words = [t[1] for t in tw]
+    for topic in topic_words:
+        print(topic)

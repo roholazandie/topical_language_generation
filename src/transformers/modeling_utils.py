@@ -556,6 +556,7 @@ class PreTrainedModel(nn.Module):
             input_ids=None,
             max_length=None,
             do_sample=None,
+            selected_topic_index=None,
             psi=None,
             theta=None,
             topic_word_matrix=None,
@@ -719,6 +720,7 @@ class PreTrainedModel(nn.Module):
         if psi is not None and theta is None:
             output = self._generate_topical_lda(
                 input_ids,
+                selected_topic_index,
                 psi,
                 tokenizer,
                 cur_len,
@@ -836,11 +838,11 @@ class PreTrainedModel(nn.Module):
             #prenorm
             import matplotlib.pyplot as plt
             #todo cut the scores based on probs(?)
-            print(logits[logits != -float("inf")].numpy().min())
+            #print(logits[logits != -float("inf")].numpy().min())
             #np.unique((F.softmax(torch.log(scores)).numpy()>0.01), return_counts=True)
             #gamma = 7 #this is a good value
-            gamma = 5 #higher values of gamma corresponds to more on topic
-            LOGIT_THRESHOLD = -100 # smaller values of Threshold is more on topic
+            gamma = 1 #higher values of gamma corresponds to more on topic
+            LOGIT_THRESHOLD = -90 # smaller values of Threshold is more on topic
             logscores = torch.log(scores)
             indices = logits < LOGIT_THRESHOLD#todo cut logits relatively not absolutely
 
@@ -888,7 +890,7 @@ class PreTrainedModel(nn.Module):
         index_first_occur = list(np.cumsum(np.sort(total_probs)[::-1]) > CUM_PROB_THRESHOLD).index(True)
         index_candidate_tokens = np.argsort(total_probs)[::-1][:index_first_occur + 1]
         candidate_probs = total_probs[index_candidate_tokens]
-        print("variance of probs ", np.var(candidate_probs))
+        #print("variance of probs ", np.var(candidate_probs))
 
     def _generate_topical2(
             self,
@@ -994,6 +996,7 @@ class PreTrainedModel(nn.Module):
     def _generate_topical_lda(
             self,
             input_ids,
+            selected_topic_index,
             psi,
             tokenizer,
             cur_len,
@@ -1051,7 +1054,9 @@ class PreTrainedModel(nn.Module):
             ########################
 
             # we should choose topics randomly with theta
-            topic_probs = torch.tensor(psi[4, :])
+            print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+            print(selected_topic_index)
+            topic_probs = torch.tensor(psi[selected_topic_index, :])
             total_probs = self.fusion(next_token_logits.squeeze(0), topic_probs, method="method3")
 
             # post_token_ids = (total_probs > 0.001).nonzero().flatten().tolist()

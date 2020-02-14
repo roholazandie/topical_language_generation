@@ -24,7 +24,7 @@ import logging
 import numpy as np
 import torch
 
-from configs import TopicalGenerationConfig
+from configs import TopicalGenerationConfig, LDAConfig, GenerationConfig
 from lda_model import LDAModel
 from lsi_model import LSIModel
 from transformers import (
@@ -232,9 +232,7 @@ def main():
     return text
 
 
-def generate_lda_text(prompt_text, lda_config_file, generation_config_file):
-    config = TopicalGenerationConfig.from_json_file(generation_config_file)
-
+def generate_lda_text(prompt_text, selected_topic_index, lda_config, config):
     config.n_gpu = torch.cuda.device_count()
     config.device = torch.device("cuda" if torch.cuda.is_available() and not config.no_cuda else "cpu")
 
@@ -265,17 +263,17 @@ def generate_lda_text(prompt_text, lda_config_file, generation_config_file):
     encoded_prompt = tokenizer.encode(prompt_text, add_special_tokens=False, return_tensors="pt")
     encoded_prompt = encoded_prompt.to(config.device)
 
-
-    lda_model = LDAModel(lda_config_file)
-    theta = lda_model.get_theta_matrix()
+    lda_model = LDAModel(lda_config)
+    #theta = lda_model.get_theta_matrix()
     psi = lda_model.get_psi_matrix()
-    # theta=None
+    theta = None
 
     output_sequences = model.generate(
         input_ids=encoded_prompt,
+        selected_topic_index=selected_topic_index,
         psi=psi,
         theta=theta,
-        tokenizer=lda_model.tokenizer,
+        tokenizer=None,#lda_model.tokenizer,
         max_length=config.length,
         temperature=config.temperature,
         top_k=config.top_k,
@@ -344,4 +342,16 @@ def generate_lsi_text(prompt_text, lsi_config_file, generation_config_file):
     return text
 
 if __name__ == "__main__":
-    main()
+    #main()
+    lda_config_file = "/home/rohola/codes/topical_language_generation/configs/alexa_lda_config.json"
+    generation_config_file = "/home/rohola/codes/topical_language_generation/configs/generation_config.json"
+
+    config = LDAConfig.from_json_file(lda_config_file)
+    generation_config = GenerationConfig.from_json_file(generation_config_file)
+
+    text = generate_lda_text(prompt_text="The issue is",
+                             selected_topic_index=2,
+                              lda_config=config,
+                             config=generation_config
+                              )
+    print(text)

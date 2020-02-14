@@ -74,38 +74,32 @@ def find_default_values(dataset, topic_model):
     return topic_modeling_config
 
 
-def create_streamlit_config_file(config_file, topic_model, dataset):
+def get_draft_config(topic_model, dataset):
+    config = ""
+    print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%", dataset)
     if topic_model == "lda":
         if dataset == "congress":
-            lda_config = LDAConfig.from_json_file("configs/congress_lda_config.json")
-            json.dump(lda_config.__dict__, open(config_file, 'w'))
+            config = LDAConfig.from_json_file("configs/congress_lda_config.json")
         elif dataset == "nytimes":
-            lda_config = LDAConfig.from_json_file("configs/nytimes_lda_config.json")
-            json.dump(lda_config.__dict__, open(config_file, 'w'))
+            config = LDAConfig.from_json_file("configs/nytimes_lda_config.json")
         elif dataset == "alexa":
-            lda_config = LDAConfig.from_json_file("configs/alexa_lda_config.json")
-            json.dump(lda_config.__dict__, open(config_file, 'w'))
+            config = LDAConfig.from_json_file("configs/alexa_lda_config.json")
         elif dataset == "newsgroup":
-            lda_config = LDAConfig.from_json_file("configs/newsgroup_lda_config.json")
-            json.dump(lda_config.__dict__, open(config_file, 'w'))
+            config = LDAConfig.from_json_file("configs/newsgroup_lda_config.json")
         elif dataset == "anes":
-            lda_config = LDAConfig.from_json_file("configs/anes_lda_config.json")
-            json.dump(lda_config.__dict__, open(config_file, 'w'))
-
+            config = LDAConfig.from_json_file("configs/anes_lda_config.json")
+            #json.dump(lda_config.__dict__, open(config_file, 'w'))
 
     elif topic_model == "lsi":
         if dataset == "congress":
-            lsi_config = LSIConfig.from_json_file("configs/congress_lsi_config.json")
-            json.dump(lsi_config.__dict__, open(config_file, 'w'))
+            config = LSIConfig.from_json_file("configs/congress_lsi_config.json")
         elif dataset == "nytimes":
-            lsi_config = LSIConfig.from_json_file("configs/nytimes_lsi_config.json")
-            json.dump(lsi_config.__dict__, open(config_file, 'w'))
+            config = LSIConfig.from_json_file("configs/nytimes_lsi_config.json")
         elif dataset == "alexa":
-            lsi_config = LSIConfig.from_json_file("configs/alexa_lsi_config.json")
-            json.dump(lsi_config.__dict__, open(config_file, 'w'))
+            config = LSIConfig.from_json_file("configs/alexa_lsi_config.json")
         elif dataset == "newsgroup":
-            lsi_config = LSIConfig.from_json_file("configs/newsgroup_lsi_config.json")
-            json.dump(lsi_config.__dict__, open(config_file, 'w'))
+            config = LSIConfig.from_json_file("configs/newsgroup_lsi_config.json")
         elif dataset == "anes":
-            lsi_config = LSIConfig.from_json_file("configs/anes_lsi_config.json")
-            json.dump(lsi_config.__dict__, open(config_file, 'w'))
+            config = LSIConfig.from_json_file("configs/anes_lsi_config.json")
+
+    return config

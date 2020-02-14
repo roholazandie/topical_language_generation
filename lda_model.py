@@ -1,6 +1,7 @@
 from gensim.utils import ClippedCorpus
 from datasets.anes_dataset import AnesDataset
 from datasets.congress_dataset import CongressDataset
+from datasets.newsgroups import NewsgroupDataset
 from datasets.nytimes_dataset import NYTimesDataset
 from datasets.topical_dataset import TopicalDataset
 from gensim.models import LdaModel, CoherenceModel
@@ -23,8 +24,8 @@ from collections import defaultdict
 
 class LDAModel:
 
-    def __init__(self, config_file):
-        self.config = LDAConfig.from_json_file(config_file)
+    def __init__(self, config, build=False):
+        self.config = config
         if self.config.tokenizer == "spacy":
             self.tokenizer = SpacyTokenizer(self.config.cached_dir)
         elif self.config.tokenizer == "gpt":
@@ -38,7 +39,9 @@ class LDAModel:
         self.all_topic_tokens_file = os.path.join(self.config.cached_dir, "all_topic_tokens.p")
         self.psi_matrix_file = os.path.join(self.config.cached_dir, "psi_matrix.p")
         self.theta_matrix_file = os.path.join(self.config.cached_dir, "theta_matrix.p")
-        # self._start()
+
+        if build:
+            self._start()
 
 
 
@@ -56,6 +59,8 @@ class LDAModel:
             dataset = AnesDataset(self.config.dataset_dir, self.tokenizer)
         elif self.config.name == "congress":
             dataset = CongressDataset(self.config.dataset_dir, self.tokenizer)
+        elif self.config.name == "newsgroup":
+            dataset = NewsgroupDataset(self.config.dataset_dir, self.tokenizer)
         else:
             raise ValueError("unknown dataset")
 
@@ -130,7 +135,9 @@ class LDAModel:
             if not os.path.isfile(self.psi_matrix_file):
                 id2token, lda_model = self.extract_model_vars()
 
+                print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
                 psi_matrix = np.zeros((self.config.num_topics, self.tokenizer.tokenizer.vocab_size))
+
                 matrix = lda_model.get_topics()  # a matrix of k x V' (num_topic x selected_vocab_size)
                 for i in range(len(id2token)):
                     j = self.tokenizer.tokenizer.convert_tokens_to_ids(id2token[i])
@@ -148,29 +155,30 @@ class LDAModel:
             after inverting this dictionary to {gpt_id: [spacy_id, spacy_id]}
             we take the mean of the corresponding columns from topic_matrix with spacy ids.
             '''
-            if not os.path.isfile(self.psi_matrix_file):
-                self._start()
-                gpt_tokenizer = TransformerGPT2Tokenizer(self.config.cached_dir)
-                spacy_to_gpt = {i: gpt_tokenizer.tokenizer.encode(token) for i, token in
-                                enumerate(list(self.dictionary.token2id.keys()))}
-
-                gpt_to_spacy = {}
-                for k, v in spacy_to_gpt.items():
-                    for x in v:
-                        gpt_to_spacy.setdefault(x, []).append(k)
-
-                matrix = self.lda_model.get_topics()
-
-                psi_matrix = np.zeros((self.config.num_topics, len(gpt_tokenizer.tokenizer)))
-                # take mean of the tokenized items by spacy
-                for gpt_id in gpt_to_spacy:
-                    spacy_ids = gpt_to_spacy[gpt_id]
-                    mean_value = np.mean([matrix[:, id] for id in spacy_ids], axis=0)
-                    psi_matrix[:, gpt_id] = mean_value
-
-                pickle.dump(psi_matrix, open(self.psi_matrix_file, 'wb'))
-            else:
-                psi_matrix = pickle.load(open(self.psi_matrix_file, 'rb'))
+            pass
+            # if not os.path.isfile(self.psi_matrix_file):
+            #     self._start()
+            #     gpt_tokenizer = TransformerGPT2Tokenizer(self.config.cached_dir)
+            #     spacy_to_gpt = {i: gpt_tokenizer.tokenizer.encode(token) for i, token in
+            #                     enumerate(list(self.dictionary.token2id.keys()))}
+            #
+            #     gpt_to_spacy = {}
+            #     for k, v in spacy_to_gpt.items():
+            #         for x in v:
+            #             gpt_to_spacy.setdefault(x, []).append(k)
+            #
+            #     matrix = self.lda_model.get_topics()
+            #
+            #     psi_matrix = np.zeros((self.config.num_topics, len(gpt_tokenizer.tokenizer)))
+            #     # take mean of the tokenized items by spacy
+            #     for gpt_id in gpt_to_spacy:
+            #         spacy_ids = gpt_to_spacy[gpt_id]
+            #         mean_value = np.mean([matrix[:, id] for id in spacy_ids], axis=0)
+            #         psi_matrix[:, gpt_id] = mean_value
+            #
+            #     pickle.dump(psi_matrix, open(self.psi_matrix_file, 'wb'))
+            # else:
+            #     psi_matrix = pickle.load(open(self.psi_matrix_file, 'rb'))
         else:
             raise ValueError("tokenizer not recognized")
 
@@ -262,33 +270,13 @@ class LDAModel:
 
 
 if __name__ == "__main__":
-    config_file = "configs/alexa_lda_config.json" #0.5320263
-    #config_file = "configs/nytimes_lda_config.json" #0.63788706
-
-    # all_coherences = []
-    # for i in range(5, 20):
-    #     lda = LDAModel(config_file=config_file)
-    #     lda.config.num_topics = i
-    #     lda._start()
-    #     #lda._start()
-    #     # topic_words = lda.model.show_topic(0) # show 0th topic words
-    #     # psi = lda.get_psi_matrix()
-    #     # theta = lda.get_theta_matrix()
-    #     # all_topic_tokens = lda.get_all_topic_tokens()
-    #     # for tt in all_topic_tokens:
-    #     #     print(tt)
-    #
-    #     coherence_score = lda.get_coherence_score()
-    #     all_coherences.append((i, coherence_score))
-    #     print(coherence_score)
-    #
-    # print(all_coherences)
-    all_scores = []
-    for i in range(3, 20):
-        lda = LDAModel(config_file=config_file)
-        lda.config.num_topics = i
-        lda._start()
-        c_w2v_score = lda.get_coherence_score(method="c_w2v")
-        all_scores.append((i, c_w2v_score))
-
-    print(all_scores)
+    #config_file = "configs/alexa_lda_config.json" #0.5320263
+    config_file = "configs/nytimes_lda_config.json" #0.63788706
+    config = LDAConfig.from_json_file(config_file)
+    lda = LDAModel(config)
+    lda._start()
+    psi = lda.get_psi_matrix()
+    theta = lda.get_theta_matrix()
+    all_topic_tokens = lda.get_all_topic_tokens()
+    for tt in all_topic_tokens:
+        print(tt)
