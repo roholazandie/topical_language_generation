@@ -2,6 +2,7 @@ import streamlit as st
 import json
 from configs import LDAConfig, LSIConfig, PlotConfig, GenerationConfig
 from lda_model import LDAModel
+from lsi_model import LSIModel
 from visualization.topic_modeling_semantic_network import visualize_semantic_netwrok
 from visualization.word_cloud_plot import word_cloud
 from gui.utils import convert_topical_model_names, convert_decoding_algorithm_names, convert_to_dataset_name, get_draft_config
@@ -43,9 +44,10 @@ topic_model_name = st.sidebar.selectbox("Topic Model:", ["Latent Dirichlet Alloc
 session_state.topic_model = convert_topical_model_names(topic_model_name)
 
 session_state.num_topics = int(st.sidebar.text_input("Number of Topics:", 10))
-session_state.alpha = float(st.sidebar.text_input("Alpha: ", 0.001))
 
-#config = find_default_values(dataset, topic_model)
+if session_state.topic_model == "lda":
+    session_state.alpha = float(st.sidebar.text_input("Alpha: ", 0.001))
+
 ###################################################
 st.sidebar.title("Generation Settings:")
 decoding_algorithm_name = st.sidebar.selectbox("Decoding Algorithm:", ["No algorithm", "prenorm"])
@@ -59,47 +61,51 @@ session_state.temperature = float(st.sidebar.text_input("Temperature: ", 1))
 session_state.repition_penalty = float(st.sidebar.text_input("Repetition Penalty: ", 1))
 session_state.length = int(st.sidebar.text_input("Generated Text Length: ", 50))
 
-###########################################
-#config_file = "configs/streamlit_config.json"
-
 
 
 topic_words = []
 
-#streamlit_caches_dir = "/home/rohola/codes/topical_language_generation/caches/streamlit_caches/"
-#topic_words_file = os.path.join(streamlit_caches_dir, "topic_words.p")
-#fig_file = os.path.join(streamlit_caches_dir, "fig.p")
 if st.button("Plot Topics"):
     with st.spinner('Please be patient ...'):
-        session_state.config = get_draft_config(session_state.topic_model, session_state.dataset)
-        session_state.config.num_topics = session_state.num_topics
-        session_state.config.alpha = session_state.alpha
-        lda = LDAModel(session_state.config, build=True)
-        all_topic_tokens = lda.get_all_topic_tokens(num_words=15)
+        if session_state.topic_model == "lda":
+            session_state.config = get_draft_config(session_state.topic_model, session_state.dataset)
+            session_state.config.num_topics = session_state.num_topics
+            session_state.config.alpha = session_state.alpha
+            lda = LDAModel(session_state.config, build=True)
+            all_topic_tokens = lda.get_all_topic_tokens(num_words=15)
 
-        a = lda.get_psi_matrix()
-        print("first time", a.max())
+            a = lda.get_psi_matrix()
+            print("first time", a.max())
 
-        # clean up words
-        session_state.topic_words = [[(t[0].strip('Ġ'), t[1]) for t in tw] for tw in all_topic_tokens]
+            # clean up words
+            session_state.topic_words = [[(t[0].strip('Ġ'), t[1]) for t in tw] for tw in all_topic_tokens]
+            plot_config = PlotConfig.from_json_file("configs/lda_plot_config.json")
 
-        #pickle.dump(topic_words, open(topic_words_file, 'wb'))
+            fig = visualize_semantic_netwrok(plot_config,
+                                             session_state.topic_words,
+                                             auto_open=False)
+            st.plotly_chart(fig)
+            session_state.fig = fig
+        elif session_state.topic_model == "lsi":
+            session_state.config = get_draft_config(session_state.topic_model, session_state.dataset)
+            session_state.config.num_topics = session_state.num_topics
+            lsi = LSIModel(session_state.config, build=True)
 
-        plot_config = PlotConfig.from_json_file("configs/plot_config.json")
+            tw = lsi.get_topic_words(num_words=10)
+            topic_words = [t[1] for t in tw]
+            # clean up words
+            session_state.topic_words = [[(t[0].strip('Ġ'), t[1]) for t in tw] for tw in topic_words]
 
-        fig = visualize_semantic_netwrok(plot_config,
-                                         session_state.topic_words,
-                                         auto_open=False)
-        st.plotly_chart(fig)
-        session_state.fig = fig
-        #pickle.dump(fig, open(fig_file, 'wb'))
+            plot_config = PlotConfig.from_json_file("configs/lsi_plot_config.json")
+            fig = visualize_semantic_netwrok(plot_config,
+                                             session_state.topic_words,
+                                             auto_open=False)
+            st.plotly_chart(fig)
+            session_state.fig = fig
+
 else:
     with st.spinner('Waiting ...'):
         try:
-            # lda = LDAModel(session_state.config)
-            # a = lda.get_psi_matrix()
-            # print("second time", a.max())
-
             st.plotly_chart(session_state.fig)
         except:
             pass
@@ -107,10 +113,11 @@ else:
 
 topic_words_show = [[t[0] for t in tw] for tw in session_state.topic_words]
 selected_topic = st.selectbox("Select Topic:", topic_words_show)
-#session_state.i = 0
+
 if selected_topic:
     session_state.i = topic_words_show.index(selected_topic)
     topic_words = [dict(tw) for tw in session_state.topic_words]
+    topic_words = [{key: abs(tw[key]) for key in tw} for tw in topic_words] #we need absolute values rather than just scores with negative values
     word_cloud(frequencies=topic_words[session_state.i])
     st.pyplot()
 
@@ -142,22 +149,22 @@ if st.button("Generate"):
 
     text = ""
     if session_state.topic_model == "lda":
-        with st.spinner('Thinking ...'):
-            print("####################################")
+        with st.spinner('Thinking in LDA...'):
             #print(session_state.config)
-            print(session_state.topic_words[session_state.i])
+            #print(session_state.topic_words[session_state.i])
 
             text = generate_lda_text(prompt_text=prompt,
-                                    selected_topic_index=session_state.i,
-                                    lda_config=session_state.config,
-                                    config=session_state.generation_config)
+                                     selected_topic_index=session_state.i,
+                                     lda_config=session_state.config,
+                                     generation_config=session_state.generation_config)
 
 
     elif session_state.topic_model == "lsi":
-        with st.spinner('Thinking ...'):
-            pass
-            # text = generate_lsi_text(prompt_text=prompt,
-            #                          lsi_config_file=config_file,
-            #                          generation_config_file=streamlit_generation_config_file)
+        with st.spinner('Thinking in LSI ...'):
+            print(session_state.config)
+            text = generate_lsi_text(prompt_text=prompt,
+                                     selected_topic_index=session_state.i,
+                                     lsi_config=session_state.config,
+                                     generation_config=session_state.generation_config)
 
     st.write(text)

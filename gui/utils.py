@@ -76,7 +76,6 @@ def find_default_values(dataset, topic_model):
 
 def get_draft_config(topic_model, dataset):
     config = ""
-    print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%", dataset)
     if topic_model == "lda":
         if dataset == "congress":
             config = LDAConfig.from_json_file("configs/congress_lda_config.json")

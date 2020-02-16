@@ -135,7 +135,6 @@ class LDAModel:
             if not os.path.isfile(self.psi_matrix_file):
                 id2token, lda_model = self.extract_model_vars()
 
-                print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
                 psi_matrix = np.zeros((self.config.num_topics, self.tokenizer.tokenizer.vocab_size))
 
                 matrix = lda_model.get_topics()  # a matrix of k x V' (num_topic x selected_vocab_size)

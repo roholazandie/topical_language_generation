@@ -24,7 +24,7 @@ import logging
 import numpy as np
 import torch
 
-from configs import TopicalGenerationConfig, LDAConfig, GenerationConfig
+from configs import TopicalGenerationConfig, LDAConfig, GenerationConfig, LSIConfig
 from lda_model import LDAModel
 from lsi_model import LSIModel
 from transformers import (
@@ -232,36 +232,36 @@ def main():
     return text
 
 
-def generate_lda_text(prompt_text, selected_topic_index, lda_config, config):
-    config.n_gpu = torch.cuda.device_count()
-    config.device = torch.device("cuda" if torch.cuda.is_available() and not config.no_cuda else "cpu")
+def generate_lda_text(prompt_text, selected_topic_index, lda_config, generation_config):
+    generation_config.n_gpu = torch.cuda.device_count()
+    generation_config.device = torch.device("cuda" if torch.cuda.is_available() and not generation_config.no_cuda else "cpu")
 
-    config.device = torch.device("cuda" if torch.cuda.is_available() and not config.no_cuda else "cpu")
-    config.n_gpu = torch.cuda.device_count()
+    generation_config.device = torch.device("cuda" if torch.cuda.is_available() and not generation_config.no_cuda else "cpu")
+    generation_config.n_gpu = torch.cuda.device_count()
 
-    set_seed(config)
+    set_seed(generation_config)
 
     # Initialize the model and tokenizer
     try:
-        config.model_type = config.model_type.lower()
-        model_class, tokenizer_class = MODEL_CLASSES[config.model_type]
+        generation_config.model_type = generation_config.model_type.lower()
+        model_class, tokenizer_class = MODEL_CLASSES[generation_config.model_type]
     except KeyError:
         raise KeyError("the model {} you specified is not supported. You are welcome to add it and open a PR :)")
 
-    tokenizer = tokenizer_class.from_pretrained(config.model_name_or_path)
-    model = model_class.from_pretrained(config.model_name_or_path)
-    model.to(config.device)
+    tokenizer = tokenizer_class.from_pretrained(generation_config.model_name_or_path)
+    model = model_class.from_pretrained(generation_config.model_name_or_path)
+    model.to(generation_config.device)
 
-    config.length = adjust_length_to_model(config.length, max_sequence_length=model.config.max_position_embeddings)
-    logger.info(config)
+    generation_config.max_length = adjust_length_to_model(generation_config.max_length, max_sequence_length=model.config.max_position_embeddings)
+    logger.info(generation_config)
 
     # Different models need different input formatting and/or extra arguments
-    requires_preprocessing = config.model_type in PREPROCESSING_FUNCTIONS.keys()
+    requires_preprocessing = generation_config.model_type in PREPROCESSING_FUNCTIONS.keys()
     if requires_preprocessing:
-        prepare_input = PREPROCESSING_FUNCTIONS.get(config.model_type)
-        prompt_text = prepare_input(config, model, tokenizer, prompt_text)
+        prepare_input = PREPROCESSING_FUNCTIONS.get(generation_config.model_type)
+        prompt_text = prepare_input(generation_config, model, tokenizer, prompt_text)
     encoded_prompt = tokenizer.encode(prompt_text, add_special_tokens=False, return_tensors="pt")
-    encoded_prompt = encoded_prompt.to(config.device)
+    encoded_prompt = encoded_prompt.to(generation_config.device)
 
     lda_model = LDAModel(lda_config)
     #theta = lda_model.get_theta_matrix()
@@ -270,88 +270,91 @@ def generate_lda_text(prompt_text, selected_topic_index, lda_config, config):
 
     output_sequences = model.generate(
         input_ids=encoded_prompt,
+        generation_config=generation_config,
         selected_topic_index=selected_topic_index,
         psi=psi,
         theta=theta,
         tokenizer=None,#lda_model.tokenizer,
-        max_length=config.length,
-        temperature=config.temperature,
-        top_k=config.top_k,
-        top_p=config.top_p,
-        repetition_penalty=config.repetition_penalty,
     )
 
     generated_sequence = output_sequences[0].tolist()
     text = tokenizer.decode(generated_sequence, clean_up_tokenization_spaces=True)
-    text = text[: text.find(config.stop_token) if config.stop_token else None]
+    text = text[: text.find(generation_config.stop_token) if generation_config.stop_token else None]
 
     return text
 
 
-def generate_lsi_text(prompt_text, lsi_config_file, generation_config_file):
-    config = TopicalGenerationConfig.from_json_file(generation_config_file)
+def generate_lsi_text(prompt_text, selected_topic_index, lsi_config, generation_config):
+    generation_config.n_gpu = torch.cuda.device_count()
+    generation_config.device = torch.device("cuda" if torch.cuda.is_available() and not generation_config.no_cuda else "cpu")
 
-    config.n_gpu = torch.cuda.device_count()
-    config.device = torch.device("cuda" if torch.cuda.is_available() and not config.no_cuda else "cpu")
+    generation_config.device = torch.device("cuda" if torch.cuda.is_available() and not generation_config.no_cuda else "cpu")
+    generation_config.n_gpu = torch.cuda.device_count()
 
-    config.device = torch.device("cuda" if torch.cuda.is_available() and not config.no_cuda else "cpu")
-    config.n_gpu = torch.cuda.device_count()
-
-    set_seed(config)
+    set_seed(generation_config)
 
     # Initialize the model and tokenizer
     try:
-        config.model_type = config.model_type.lower()
-        model_class, tokenizer_class = MODEL_CLASSES[config.model_type]
+        generation_config.model_type = generation_config.model_type.lower()
+        model_class, tokenizer_class = MODEL_CLASSES[generation_config.model_type]
     except KeyError:
         raise KeyError("the model {} you specified is not supported. You are welcome to add it and open a PR :)")
 
-    tokenizer = tokenizer_class.from_pretrained(config.model_name_or_path)
-    model = model_class.from_pretrained(config.model_name_or_path)
-    model.to(config.device)
+    tokenizer = tokenizer_class.from_pretrained(generation_config.model_name_or_path)
+    model = model_class.from_pretrained(generation_config.model_name_or_path)
+    model.to(generation_config.device)
 
-    config.length = adjust_length_to_model(config.length, max_sequence_length=model.config.max_position_embeddings)
-    logger.info(config)
+    generation_config.max_length = adjust_length_to_model(generation_config.max_length, max_sequence_length=model.config.max_position_embeddings)
+    logger.info(generation_config)
 
     # Different models need different input formatting and/or extra arguments
-    requires_preprocessing = config.model_type in PREPROCESSING_FUNCTIONS.keys()
+    requires_preprocessing = generation_config.model_type in PREPROCESSING_FUNCTIONS.keys()
     if requires_preprocessing:
-        prepare_input = PREPROCESSING_FUNCTIONS.get(config.model_type)
-        prompt_text = prepare_input(config, model, tokenizer, prompt_text)
+        prepare_input = PREPROCESSING_FUNCTIONS.get(generation_config.model_type)
+        prompt_text = prepare_input(generation_config, model, tokenizer, prompt_text)
     encoded_prompt = tokenizer.encode(prompt_text, add_special_tokens=False, return_tensors="pt")
-    encoded_prompt = encoded_prompt.to(config.device)
+    encoded_prompt = encoded_prompt.to(generation_config.device)
 
-    lsi_model = LSIModel(lsi_config_file)
+    lsi_model = LSIModel(lsi_config)
     topic_word_matrix = lsi_model.get_topic_words_matrix()
 
     output_sequences = model.generate(
         input_ids=encoded_prompt,
+        generation_config=generation_config,
         topic_word_matrix=topic_word_matrix,
-        tokenizer=lsi_model.tokenizer,
-        max_length=config.length,
-        temperature=config.temperature,
-        top_k=config.top_k,
-        top_p=config.top_p,
-        repetition_penalty=config.repetition_penalty,
+        selected_topic_index=selected_topic_index,
+        tokenizer=None,#lsi_model.tokenizer,
     )
 
     generated_sequence = output_sequences[0].tolist()
     text = tokenizer.decode(generated_sequence, clean_up_tokenization_spaces=True)
-    text = text[: text.find(config.stop_token) if config.stop_token else None]
+    text = text[: text.find(generation_config.stop_token) if generation_config.stop_token else None]
 
     return text
 
 if __name__ == "__main__":
     #main()
-    lda_config_file = "/home/rohola/codes/topical_language_generation/configs/alexa_lda_config.json"
-    generation_config_file = "/home/rohola/codes/topical_language_generation/configs/generation_config.json"
+    # lda_config_file = "/home/rohola/codes/topical_language_generation/configs/alexa_lda_config.json"
+    # generation_config_file = "/home/rohola/codes/topical_language_generation/configs/generation_config.json"
+    #
+    # config = LDAConfig.from_json_file(lda_config_file)
+    # generation_config = GenerationConfig.from_json_file(generation_config_file)
+    #
+    # text = generate_lda_text(prompt_text="The issue is",
+    #                          selected_topic_index=2,
+    #                          lda_config=config,
+    #                          generation_config=generation_config
+    #                          )
+    # print(text)
 
-    config = LDAConfig.from_json_file(lda_config_file)
+    lsi_config_file = "/home/rohola/codes/topical_language_generation/configs/alexa_lsi_config.json"
+    generation_config_file = "/home/rohola/codes/topical_language_generation/configs/generation_config.json"
+    lsi_config = LSIConfig.from_json_file(lsi_config_file)
     generation_config = GenerationConfig.from_json_file(generation_config_file)
 
-    text = generate_lda_text(prompt_text="The issue is",
+    text = generate_lsi_text(prompt_text="The issue is",
                              selected_topic_index=2,
-                              lda_config=config,
-                             config=generation_config
-                              )
+                             lsi_config=lsi_config,
+                             generation_config=generation_config)
+
     print(text)

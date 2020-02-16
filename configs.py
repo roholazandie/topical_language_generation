@@ -192,13 +192,15 @@ class LSIConfig:
 
         return cls.from_dict(json.loads(config_json))
 
+    def __str__(self):
+        return str(self.__dict__)
 
 class GenerationConfig:
     def __init__(self, model_type="",
                  model_name_or_path="",
                  cached_dir="",
                  padding_text="",
-                 length="",
+                 max_length="",
                  temperature="",
                  repetition_penalty="",
                  top_k="",
@@ -208,12 +210,13 @@ class GenerationConfig:
                  gamma="",
                  no_cuda="",
                  seed="",
-                 stop_token=""):
+                 stop_token="",
+                 num_beams=""):
         self.model_type = model_type
         self.model_name_or_path = model_name_or_path
         self.cached_dir = cached_dir
         self.padding_text = padding_text
-        self.length = length
+        self.max_length = max_length
         self.temperature = temperature
         self.repetition_penalty = repetition_penalty
         self.top_k = top_k
@@ -224,6 +227,7 @@ class GenerationConfig:
         self.no_cuda = no_cuda
         self.seed = seed
         self.stop_token = stop_token
+        self.num_beams = num_beams
 
     @classmethod
     def from_dict(cls, json_object):

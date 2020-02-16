@@ -554,18 +554,13 @@ class PreTrainedModel(nn.Module):
     def generate(
             self,
             input_ids=None,
-            max_length=None,
+            generation_config=None,
             do_sample=None,
             selected_topic_index=None,
             psi=None,
             theta=None,
             topic_word_matrix=None,
             tokenizer=None,
-            num_beams=None,
-            temperature=None,
-            top_k=None,
-            top_p=None,
-            repetition_penalty=None,
             bos_token_id=None,
             pad_token_id=None,
             eos_token_ids=None,
@@ -657,13 +652,13 @@ class PreTrainedModel(nn.Module):
                 "Please use another model class (e.g. `OpenAIGPTLMHeadModel`, `XLNetLMHeadModel`, `GPT2LMHeadModel`, `CTRLLMHeadModel`, `T5WithLMHeadModel`, `TransfoXLLMHeadModel`)"
             )
 
-        max_length = max_length if max_length is not None else self.config.max_length
+        max_length = generation_config.max_length if generation_config.max_length is not None else self.config.max_length
         do_sample = do_sample if do_sample is not None else self.config.do_sample
-        num_beams = num_beams if num_beams is not None else self.config.num_beams
-        temperature = temperature if temperature is not None else self.config.temperature
-        top_k = top_k if top_k is not None else self.config.top_k
-        top_p = top_p if top_p is not None else self.config.top_p
-        repetition_penalty = repetition_penalty if repetition_penalty is not None else self.config.repetition_penalty
+        num_beams = generation_config.num_beams if generation_config.num_beams is not None else self.config.num_beams
+        temperature = generation_config.temperature if generation_config.temperature is not None else self.config.temperature
+        top_k = generation_config.top_k if generation_config.top_k is not None else self.config.top_k
+        top_p = generation_config.top_p if generation_config.top_p is not None else self.config.top_p
+        repetition_penalty = generation_config.repetition_penalty if generation_config.repetition_penalty is not None else self.config.repetition_penalty
         bos_token_id = bos_token_id if bos_token_id is not None else self.config.bos_token_id
         pad_token_id = pad_token_id if pad_token_id is not None else self.config.pad_token_id
         eos_token_ids = eos_token_ids if eos_token_ids is not None else self.config.eos_token_ids
@@ -720,15 +715,11 @@ class PreTrainedModel(nn.Module):
         if psi is not None and theta is None:
             output = self._generate_topical_lda(
                 input_ids,
+                generation_config,
                 selected_topic_index,
                 psi,
                 tokenizer,
                 cur_len,
-                max_length,
-                temperature,
-                top_k,
-                top_p,
-                repetition_penalty,
                 pad_token_id,
                 eos_token_ids,
                 effective_batch_size,
@@ -753,14 +744,11 @@ class PreTrainedModel(nn.Module):
         elif topic_word_matrix is not None:
             output = self._generate_topical_lsi(
                 input_ids,
+                generation_config,
+                selected_topic_index,
                 topic_word_matrix,
                 tokenizer,
                 cur_len,
-                max_length,
-                temperature,
-                top_k,
-                top_p,
-                repetition_penalty,
                 pad_token_id,
                 eos_token_ids,
                 effective_batch_size,
@@ -802,20 +790,20 @@ class PreTrainedModel(nn.Module):
             output = output.view(batch_size, num_return_sequences, -1)
         return output
 
-    def fusion(self, logits, scores, method="method1"):
+    def fusion(self, logits, scores, config):
         '''
         scores are probs here (sum(probs)=1), they could be anything tho
         '''
-        if method == "method0": #no topic
+        if config.fusion_method == "method0": #no topic
             total_probs = F.softmax(logits, dim=-1)
             return total_probs
 
-        if method == "method1":
+        if config.fusion_method == "method1":
             gamma = 0.1
             token_probs = F.softmax(logits, dim=-1)
             total_probs = token_probs + gamma*scores
             return total_probs
-        elif method == "method2":
+        elif config.fusion_method == "method2":
             # find the index of important token: those that are responsible for the 0.7 of the whole
             # prob dist
             scores = scores.numpy()
@@ -834,15 +822,18 @@ class PreTrainedModel(nn.Module):
             total_probs = F.softmax(torch.from_numpy(logits), dim=-1)
             return total_probs
 
-        elif method == "method3":
+        elif config.fusion_method == "method3":
             #prenorm
             import matplotlib.pyplot as plt
             #todo cut the scores based on probs(?)
             #print(logits[logits != -float("inf")].numpy().min())
             #np.unique((F.softmax(torch.log(scores)).numpy()>0.01), return_counts=True)
             #gamma = 7 #this is a good value
-            gamma = 1 #higher values of gamma corresponds to more on topic
-            LOGIT_THRESHOLD = -90 # smaller values of Threshold is more on topic
+
+            gamma = config.gamma
+            LOGIT_THRESHOLD = config.logit_threshold
+            #gamma = 1 #higher values of gamma corresponds to more on topic
+            #LOGIT_THRESHOLD = -90 # smaller values of Threshold is more on topic
             logscores = torch.log(scores)
             indices = logits < LOGIT_THRESHOLD#todo cut logits relatively not absolutely
 
@@ -865,7 +856,7 @@ class PreTrainedModel(nn.Module):
             self.calculate_variance(total_probs)
             return total_probs
 
-        elif method=="method4":
+        elif config.fusion_method=="method4":
             #postnorm
             probs = F.softmax(logits)
             probs[scores > 1e-6] = 1.0
@@ -874,7 +865,7 @@ class PreTrainedModel(nn.Module):
             total_probs = F.softmax(torch.mul(probs, scores))
             return total_probs
 
-        elif method == "method5":
+        elif config.fusion_method == "method5":
             token_probs = F.softmax(logits, dim=-1).double()
             total_probs = torch.zeros_like(scores)
             id1 = token_probs >= 0*scores
@@ -996,15 +987,11 @@ class PreTrainedModel(nn.Module):
     def _generate_topical_lda(
             self,
             input_ids,
+            config,
             selected_topic_index,
             psi,
             tokenizer,
             cur_len,
-            max_length,
-            temperature,
-            top_k,
-            top_p,
-            repetition_penalty,
             pad_token_id,
             eos_token_ids,
             batch_size,
@@ -1024,7 +1011,7 @@ class PreTrainedModel(nn.Module):
 
         past = None
 
-        while cur_len < max_length:
+        while cur_len < config.max_length:
             model_inputs = self.prepare_inputs_for_generation(input_ids, past=past)
             outputs = self(**model_inputs)
             next_token_logits = outputs[0][:, -1, :]
@@ -1034,21 +1021,21 @@ class PreTrainedModel(nn.Module):
                 past = outputs[1]
 
             # repetition penalty from CTRL paper (https://arxiv.org/abs/1909.05858)
-            if repetition_penalty != 1.0:
+            if config.repetition_penalty != 1.0:
                 for i in range(batch_size):
                     for previous_token in set(input_ids[i].tolist()):
                         # if score < 0 then repetition penalty has to multiplied to reduce the previous token probability
                         if next_token_logits[i, previous_token] < 0:
-                            next_token_logits[i, previous_token] *= repetition_penalty
+                            next_token_logits[i, previous_token] *= config.repetition_penalty
                         else:
-                            next_token_logits[i, previous_token] /= repetition_penalty
+                            next_token_logits[i, previous_token] /= config.repetition_penalty
 
 
             # Temperature (higher temperature => more likely to sample low probability tokens)
-            if temperature != 1.0:
-                next_token_logits = next_token_logits / temperature
+            if config.temperature != 1.0:
+                next_token_logits = next_token_logits / config.temperature
             # Top-p/top-k filtering
-            next_token_logits = top_k_top_p_filtering(next_token_logits, top_k=top_k, top_p=top_p)
+            next_token_logits = top_k_top_p_filtering(next_token_logits, top_k=config.top_k, top_p=config.top_p)
             token_probs = F.softmax(next_token_logits, dim=-1)
 
             ########################
@@ -1057,7 +1044,7 @@ class PreTrainedModel(nn.Module):
             print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
             print(selected_topic_index)
             topic_probs = torch.tensor(psi[selected_topic_index, :])
-            total_probs = self.fusion(next_token_logits.squeeze(0), topic_probs, method="method3")
+            total_probs = self.fusion(next_token_logits.squeeze(0), topic_probs, config)
 
             # post_token_ids = (total_probs > 0.001).nonzero().flatten().tolist()
 
@@ -1107,7 +1094,7 @@ class PreTrainedModel(nn.Module):
                 break
 
         # add eos_token_ids to unfinished sentences
-        if cur_len == max_length:
+        if cur_len == config.max_length:
             input_ids[:, -1].masked_fill_(unfinished_sents.to(dtype=torch.bool), eos_token_ids[0])
 
         return input_ids
@@ -1244,14 +1231,11 @@ class PreTrainedModel(nn.Module):
     def _generate_topical_lsi(
             self,
             input_ids,
+            config,
+            selected_topic_index,
             topic_word_matrix,
             tokenizer,
             cur_len,
-            max_length,
-            temperature,
-            top_k,
-            top_p,
-            repetition_penalty,
             pad_token_id,
             eos_token_ids,
             batch_size,
@@ -1270,7 +1254,7 @@ class PreTrainedModel(nn.Module):
 
         past = None
 
-        while cur_len < max_length:
+        while cur_len < config.max_length:
             model_inputs = self.prepare_inputs_for_generation(input_ids, past=past)
             outputs = self(**model_inputs)
             next_token_logits = outputs[0][:, -1, :]
@@ -1280,28 +1264,30 @@ class PreTrainedModel(nn.Module):
                 past = outputs[1]
 
             # repetition penalty from CTRL paper (https://arxiv.org/abs/1909.05858)
-            if repetition_penalty != 1.0:
+            if config.repetition_penalty != 1.0:
                 for i in range(batch_size):
                     for previous_token in set(input_ids[i].tolist()):
                         # if score < 0 then repetition penalty has to multiplied to reduce the previous token probability
                         if next_token_logits[i, previous_token] < 0:
-                            next_token_logits[i, previous_token] *= repetition_penalty
+                            next_token_logits[i, previous_token] *= config.repetition_penalty
                         else:
-                            next_token_logits[i, previous_token] /= repetition_penalty
+                            next_token_logits[i, previous_token] /= config.repetition_penalty
 
 
             # Temperature (higher temperature => more likely to sample low probability tokens)
-            if temperature != 1.0:
-                next_token_logits = next_token_logits / temperature
+            if config.temperature != 1.0:
+                next_token_logits = next_token_logits / config.temperature
             # Top-p/top-k filtering
-            next_token_logits = top_k_top_p_filtering(next_token_logits, top_k=top_k, top_p=top_p)
+            next_token_logits = top_k_top_p_filtering(next_token_logits, top_k=config.top_k, top_p=config.top_p)
             token_probs = F.softmax(next_token_logits, dim=-1)
 
             ########################
 
             # we should choose topics randomly with theta
-            topic_probs = torch.tensor(np.abs(topic_word_matrix[4, :]))  # zero'th topic
-            total_probs = self.fusion(next_token_logits.squeeze(0), topic_probs, method="method3")
+            topic_probs = torch.tensor(np.abs(topic_word_matrix[selected_topic_index, :]))  # zero'th topic
+            total_probs = self.fusion(next_token_logits.squeeze(0),
+                                      topic_probs,
+                                      config)
 
             # Sample
             next_token = torch.multinomial(total_probs, num_samples=1).squeeze(0)
@@ -1339,7 +1325,7 @@ class PreTrainedModel(nn.Module):
                 break
 
         # add eos_token_ids to unfinished sentences
-        if cur_len == max_length:
+        if cur_len == config.max_length:
             input_ids[:, -1].masked_fill_(unfinished_sents.to(dtype=torch.bool), eos_token_ids[0])
 
         return input_ids
