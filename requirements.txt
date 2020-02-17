@@ -12,4 +12,4 @@ sacremoses
 networkx
 plotly
 pygraphviz
-streamlit=0.52.2
+streamlit==0.52.2
