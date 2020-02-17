@@ -841,7 +841,7 @@ class PreTrainedModel(nn.Module):
             #logscores[logscores == -float("Inf")] = 0
             logscores[indices] = logits[indices].double()
             if all(logscores.numpy() == -float("inf")):
-                print("no logscore")
+                #print("no logscore")
                 logscores = 0
             else:
                 logscore2 = logscores
