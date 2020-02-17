@@ -3,7 +3,7 @@ from topical_generation import generate_lsi_text, generate_lda_text
 from evaluation.metrics import Metrics
 import numpy as np
 
-def eval_ngram(model, prompt_file):
+def eval_ngram(model, prompt_file, out_file):
     num_prompt_words = 4
     text_length = 50
     metric = Metrics()
@@ -30,6 +30,8 @@ def eval_ngram(model, prompt_file):
 
     with open(prompt_file) as fr:
         for i, line in enumerate(fr):
+            if i > 5:
+                break
             prompt_text = " ".join(line.split()[:num_prompt_words])
             if model == "lsi":
                 text = generate_lsi_text(prompt_text=prompt_text,
@@ -62,16 +64,25 @@ def eval_ngram(model, prompt_file):
                 print("dist3: ", dist3)
                 dists3.append(dist3)
 
+    with open(out_file, 'w') as file_writer:
+        file_writer.write(str(dists1)+"\n")
+        file_writer.write(str(dists2)+"\n")
+        file_writer.write(str(dists3)+"\n")
+        file_writer.write("dist1: "+str(np.mean(dists1)) + "\n")
+        file_writer.write("dist2: "+str(np.mean(dists2)) + "\n")
+        file_writer.write("dist3: "+str(np.mean(dists3)) + "\n")
+
     print(dists1)
     print(dists2)
     print(dists3)
 
     print("dist1: ", np.mean(dists1))
-    print("dist3: ", np.mean(dists2))
+    print("dist2: ", np.mean(dists2))
     print("dist3: ", np.mean(dists3))
 
 
 if __name__ == "__main__":
     prompt_file = "/media/rohola/data/sample_texts/films/film_reviews.txt"
+    out_file = "result.txt"
     #prompt_file = "/media/data2/rohola_data/film_reviews.txt"
-    eval_ngram("lda", prompt_file)
+    eval_ngram("lda", prompt_file, out_file)
