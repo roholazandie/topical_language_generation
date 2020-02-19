@@ -39,7 +39,7 @@ def eval_ngram(model, prompt_file, out_file):
                                          lsi_config=lsi_config,
                                          generation_config=generation_config)
             elif model == "lda":
-                text = generate_lda_text(prompt_text="The issue is",
+                text = generate_lda_text(prompt_text=prompt_text,
                                          selected_topic_index=2,
                                          lda_config=lda_config,
                                          generation_config=generation_config

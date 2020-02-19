@@ -67,9 +67,12 @@ class LDAModel:
         self.docs = [doc for doc in dataset]
         pickle.dump(self.docs, open(self.docs_file, 'wb'))
         self.dictionary = Dictionary(self.docs)
+
+        pickle.dump(self.dictionary, open(self.dictionary_file, 'wb')) #the saved dictionary is complete without any truncation
+
         self.dictionary.filter_extremes(no_below=self.config.no_below,
                                         no_above=self.config.no_above)
-        pickle.dump(self.dictionary, open(self.dictionary_file, 'wb'))
+
         # Bag-of-words representation of the documents.
         self.corpus = [self.dictionary.doc2bow(doc) for doc in self.docs]
         pickle.dump(self.corpus, open(self.corpus_file, 'wb'))

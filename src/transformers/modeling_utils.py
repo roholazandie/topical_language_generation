@@ -24,6 +24,7 @@ from torch.nn import CrossEntropyLoss
 from torch.nn import functional as F
 
 import numpy as np
+from scipy.stats import entropy
 
 from .configuration_utils import PretrainedConfig
 from .file_utils import (
@@ -1041,8 +1042,7 @@ class PreTrainedModel(nn.Module):
             ########################
 
             # we should choose topics randomly with theta
-            print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
-            print(selected_topic_index)
+            #print(selected_topic_index)
             topic_probs = torch.tensor(psi[selected_topic_index, :])
             total_probs = self.fusion(next_token_logits.squeeze(0), topic_probs, config)
 
@@ -1254,6 +1254,8 @@ class PreTrainedModel(nn.Module):
 
         past = None
 
+        token_perplexities = []
+        total_perplexities = []
         while cur_len < config.max_length:
             model_inputs = self.prepare_inputs_for_generation(input_ids, past=past)
             outputs = self(**model_inputs)
@@ -1281,6 +1283,10 @@ class PreTrainedModel(nn.Module):
             next_token_logits = top_k_top_p_filtering(next_token_logits, top_k=config.top_k, top_p=config.top_p)
             token_probs = F.softmax(next_token_logits, dim=-1)
 
+            ent = entropy(token_probs.numpy()[0], base=2)
+            token_perplexity = 2 ** ent
+
+
             ########################
 
             # we should choose topics randomly with theta
@@ -1288,6 +1294,13 @@ class PreTrainedModel(nn.Module):
             total_probs = self.fusion(next_token_logits.squeeze(0),
                                       topic_probs,
                                       config)
+
+            ent = entropy(total_probs.numpy(), base=2)
+            total_perplexity = 2 ** ent
+            print("token perplexity, total perplexity: ", (token_perplexity, total_perplexity))
+
+            token_perplexities.append(token_perplexity)
+            total_perplexities.append(total_perplexity)
 
             # Sample
             next_token = torch.multinomial(total_probs, num_samples=1).squeeze(0)
@@ -1327,6 +1340,11 @@ class PreTrainedModel(nn.Module):
         # add eos_token_ids to unfinished sentences
         if cur_len == config.max_length:
             input_ids[:, -1].masked_fill_(unfinished_sents.to(dtype=torch.bool), eos_token_ids[0])
+
+
+        print("mean token perplexity: ", np.mean(token_perplexities))
+        print("mean total perplexity: ", np.mean(total_perplexities))
+
 
         return input_ids
 

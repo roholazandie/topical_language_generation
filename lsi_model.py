@@ -29,6 +29,7 @@ class LSIModel:
         self.model_file = os.path.join(self.config.cached_dir, "lsi_model_file.p")
         self.dictionary_file = os.path.join(self.config.cached_dir, "dictionary.p")
         self.corpus_file = os.path.join(self.config.cached_dir, "corpus.p")
+        self.docs_file = os.path.join(self.config.cached_dir, "docs.p")
 
         if build:
             self._start()
@@ -53,12 +54,14 @@ class LSIModel:
             raise ValueError("unknown dataset")
 
         docs = [doc for doc in dataset]
+        pickle.dump(docs, open(self.docs_file, 'wb'))
         self.dictionary = Dictionary(docs)
+        pickle.dump(self.dictionary, open(self.dictionary_file, 'wb'))
+
         self.dictionary.filter_extremes(no_below=self.config.no_below,
                                         no_above=self.config.no_above)
         self.corpus = [self.dictionary.doc2bow(doc) for doc in docs]
 
-        pickle.dump(self.dictionary, open(self.dictionary_file, 'wb'))
         pickle.dump(self.corpus, open(self.corpus_file, 'wb'))
 
 
@@ -71,6 +74,8 @@ class LSIModel:
         self.lsi_model.save(self.model_file)
 
 
+    def get_docs(self):
+        return pickle.load(open(self.docs_file, 'rb'))
 
     def get_model(self):
         return LsiModel.load(self.model_file)
@@ -144,7 +149,7 @@ class LSIModel:
                 pass
 
 
-    def get_coherence_score(self):
+    def get_coherence_score(self, coherence="u_mass"):
         try:
             model = self.lsi_model
         except:
@@ -155,21 +160,27 @@ class LSIModel:
         except:
             corpus = self.get_corpus()
 
-        cm = CoherenceModel(model=model, corpus=corpus, coherence='u_mass')
+        if coherence == "u_mass":
+            cm = CoherenceModel(model=model, corpus=corpus, coherence='c_w2v')
+        elif coherence == "c_w2v":
+            cm = CoherenceModel(model=model, texts=self.get_docs(),
+                                dictionary=self.get_dictionary(), coherence=coherence)
         coherence = cm.get_coherence()
         #coherence = cm.get_coherence_per_topic()
         return coherence
 
 
 if __name__ == "__main__":
-    #config_file = "configs/alexa_lsi_config.json" #-2.240693249483874
+    config_file = "configs/alexa_lsi_config.json" #-2.240693249483874
     #config_file = "configs/nytimes_lsi_config.json" #-2.3255072569456896
     #config_file = "configs/anes_lsi_config.json" #-3.35591499048434
-    config_file = "configs/congress_lsi_config.json" #-2.842185966368092
+    #config_file = "configs/congress_lsi_config.json" #-2.842185966368092
     config = LSIConfig.from_json_file(config_file)
     lsi = LSIModel(config=config, build=False)
-    lsi._start()
+    #lsi._start()
     tw = lsi.get_topic_words(num_words=10)
     topic_words = [t[1] for t in tw]
     for topic in topic_words:
         print(topic)
+    sc = lsi.get_coherence_score("c_w2v")
+    print(sc)

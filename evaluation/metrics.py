@@ -25,6 +25,12 @@ class Metrics:
         return dist3
 
 
+class Perplexity:
+
+    def __init__(self):
+        pass
+
+
 if __name__ == "__main__":
     metrics = Metrics()
     #text = "Yes, you will get distinct words (though punctuation will affect all of this to a degree). To generate sentences, I assume that you want something like a Markov chain? I actually wrote up an article on word generation using markov chains a few years ago. The basic ideas are the same: ohthehugemanatee.net/2009/10/…. You'll need to find a way to label starting words in the data structure which this does not do, as well as ending or terminal words. "
