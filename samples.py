@@ -95,6 +95,5 @@ import matplotlib.pyplot as plt
 #     print("##################")
 
 
-import pickle
-tok2freq = pickle.load(open("/home/rohola/all_topic_tokens.p", 'rb'))
-a = 1
+print("dfsd")
+print()

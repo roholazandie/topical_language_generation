@@ -776,15 +776,15 @@ class PreTrainedModel(nn.Module):
             output = self._generate_no_beam_search(
                 input_ids,
                 cur_len,
-                max_length,
-                do_sample,
-                temperature,
-                top_k,
-                top_p,
-                repetition_penalty,
-                pad_token_id,
-                eos_token_ids,
-                effective_batch_size,
+                max_length=generation_config.max_length,
+                do_sample=do_sample,
+                temperature=generation_config.temperature,
+                top_k=generation_config.top_k,
+                top_p=generation_config.top_p,
+                repetition_penalty=generation_config.repetition_penalty,
+                pad_token_id=pad_token_id,
+                eos_token_ids=eos_token_ids,
+                batch_size=effective_batch_size
             )
 
         if num_return_sequences != 1:

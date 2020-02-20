@@ -43,8 +43,6 @@ class LDAModel:
         if build:
             self._start()
 
-
-
     def _start(self):
         self._clear_caches()
         self._prepare_dataset()
@@ -68,8 +66,6 @@ class LDAModel:
         pickle.dump(self.docs, open(self.docs_file, 'wb'))
         self.dictionary = Dictionary(self.docs)
 
-        pickle.dump(self.dictionary, open(self.dictionary_file, 'wb')) #the saved dictionary is complete without any truncation
-
         self.dictionary.filter_extremes(no_below=self.config.no_below,
                                         no_above=self.config.no_above)
 
@@ -79,7 +75,8 @@ class LDAModel:
 
         temp = self.dictionary[0]  # This is only to "load" the dictionary.
         self.id2token = self.dictionary.id2token
-
+        pickle.dump(self.dictionary,
+        open(self.dictionary_file, 'wb'))  # the saved dictionary is complete without any truncation
 
     def _run_model(self):
         self.lda_model = LdaModel(
@@ -273,11 +270,11 @@ class LDAModel:
 
 
 if __name__ == "__main__":
-    config_file = "configs/alexa_lda_config.json" #0.5320263
+    config_file = "/home/rohola/codes/topical_language_generation/configs/alexa_lda_config.json" #0.5320263
     #config_file = "configs/nytimes_lda_config.json" #0.63788706
     config = LDAConfig.from_json_file(config_file)
     lda = LDAModel(config)
-    lda._start()
+    #lda._start()
     psi = lda.get_psi_matrix()
     theta = lda.get_theta_matrix()
     all_topic_tokens = lda.get_all_topic_tokens()

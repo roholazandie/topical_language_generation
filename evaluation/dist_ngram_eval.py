@@ -1,12 +1,12 @@
 from configs import LSIConfig, GenerationConfig, LDAConfig
 from topical_generation import generate_lsi_text, generate_lda_text
-from evaluation.metrics import Metrics
+from evaluation.metrics import Distinct
 import numpy as np
 
 def eval_ngram(model, prompt_file, out_file):
     num_prompt_words = 4
     text_length = 50
-    metric = Metrics()
+    metric = Distinct()
     all_texts = []
 
     dists1 = []

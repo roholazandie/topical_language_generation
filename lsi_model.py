@@ -56,13 +56,13 @@ class LSIModel:
         docs = [doc for doc in dataset]
         pickle.dump(docs, open(self.docs_file, 'wb'))
         self.dictionary = Dictionary(docs)
-        pickle.dump(self.dictionary, open(self.dictionary_file, 'wb'))
 
         self.dictionary.filter_extremes(no_below=self.config.no_below,
                                         no_above=self.config.no_above)
         self.corpus = [self.dictionary.doc2bow(doc) for doc in docs]
 
         pickle.dump(self.corpus, open(self.corpus_file, 'wb'))
+        pickle.dump(self.dictionary, open(self.dictionary_file, 'wb'))
 
 
     def _run_model(self):

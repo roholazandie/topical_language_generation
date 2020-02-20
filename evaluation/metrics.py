@@ -1,7 +1,14 @@
 import spacy
+from gensim.models import CoherenceModel
+import numpy as np
+from configs import LDAConfig
+from lda_model import LDAModel
+from gensim.topic_coherence import segmentation
+import logging
 
+logger = logging.getLogger(__name__)
 
-class Metrics:
+class Distinct:
 
     def __init__(self):
         self.nlp = spacy.load("en_core_web_sm")
@@ -25,14 +32,45 @@ class Metrics:
         return dist3
 
 
-class Perplexity:
+class TopicCoherence:
 
-    def __init__(self):
-        pass
+    def __init__(self, config: LDAConfig):
+        self.model = LDAModel(config)
+
+        # config_file = "../configs/alexa_lsi_config.json"
+        # config = LSIConfig.from_json_file(config_file)
+        # model = LSIModel(config=config, build=False)
+
+        self.dictionary = self.model.get_dictionary()
+        temp = self.dictionary[0]  # This is only to "load" the dictionary.
+        self.cm = CoherenceModel(model=self.model.get_model(),
+                            texts=self.model.get_docs(),
+                            dictionary=self.dictionary,
+                            coherence="c_w2v")
+
+    def get_coherence(self, doc):
+        tokens = self.model.tokenizer.tokenize(doc)
+        # todo try truncated version of doc_ids, those that are in truncated dictionary
+        doc_ids = []
+        for token in tokens:
+            try:
+                tid = self.dictionary.token2id[token]
+            except:
+                logging.debug("Unknown token: " + str(token))
+                continue
+            doc_ids.append(tid)
+
+        doc_ids = [np.array(doc_ids)]
+        #doc_ids = [np.array([self.dictionary.token2id[token] for token in tokens])]
+
+        segmented_doc = segmentation.s_one_set(doc_ids)
+
+        doc_coherence = self.cm.get_coherence_per_topic(segmented_doc)[0]
+        return doc_coherence
 
 
 if __name__ == "__main__":
-    metrics = Metrics()
+    metrics = Distinct()
     #text = "Yes, you will get distinct words (though punctuation will affect all of this to a degree). To generate sentences, I assume that you want something like a Markov chain? I actually wrote up an article on word generation using markov chains a few years ago. The basic ideas are the same: ohthehugemanatee.net/2009/10/…. You'll need to find a way to label starting words in the data structure which this does not do, as well as ending or terminal words. "
     text = "this is a very simple example example example"
     dist1 = metrics.distinct_1(text)
@@ -41,3 +79,10 @@ if __name__ == "__main__":
     print(dist1)
     print(dist2)
     print(dist3)
+
+    config_file = "../configs/alexa_lda_config.json"
+    config = LDAConfig.from_json_file(config_file)
+    topic_coherence = TopicCoherence(config)
+    doc = "text text text"
+    coherence = topic_coherence.get_coherence(doc)
+    print(coherence)
