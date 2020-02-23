@@ -24,7 +24,7 @@ import logging
 import numpy as np
 import torch
 
-from configs import TopicalGenerationConfig
+from configs import GenerationConfig
 from transformers import (
     CTRLLMHeadModel,
     CTRLTokenizer,
@@ -148,7 +148,7 @@ def adjust_length_to_model(length, max_sequence_length):
 
 def main():
     config_file = "configs/generation_config.json"
-    config = TopicalGenerationConfig.from_json_file(config_file)
+    config = GenerationConfig.from_json_file(config_file)
 
     config.n_gpu = torch.cuda.device_count()
     config.device = torch.device("cuda" if torch.cuda.is_available() and not config.no_cuda else "cpu")

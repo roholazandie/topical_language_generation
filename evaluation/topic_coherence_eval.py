@@ -25,6 +25,9 @@ def eval_topic_coherence(config, generation_config, topic_index, prompt_file, ou
                                          lsi_config=config,
                                          generation_config=generation_config)
             elif type(config) == LDAConfig:
+                print("****************************************************************")
+                print("****************************************************************")
+                print("****************************************************************")
                 text = generate_lda_text(prompt_text=prompt_text,
                                          selected_topic_index=topic_index,
                                          lda_config=config,
@@ -37,6 +40,7 @@ def eval_topic_coherence(config, generation_config, topic_index, prompt_file, ou
                                  generation_config=generation_config)
 
             if len(text.split()) > text_length:
+                print(text)
                 coherence = topic_coherence.get_coherence(text)
                 coherences.append(coherence)
 
@@ -58,10 +62,15 @@ if __name__ == "__main__":
     generation_config_file = "/home/rohola/codes/topical_language_generation/configs/generation_config.json"
     generation_config = GenerationConfig.from_json_file(generation_config_file)
     prompt_file = "/media/data2/rohola_data/film_reviews.txt"
-    out_file = "/home/rohola/codes/topical_language_generation/results/topic_coherence/topic_coherence_gpt_lda_result.txt"
+    out_file = "/home/rohola/codes/topical_language_generation/results/topic_coherence/topic_coherence_gpt_lda_result3.txt"
+
+
+    print(generation_config)
+    print(lda_config)
+
 
     eval_topic_coherence(config=lda_config,
                          generation_config=generation_config,
-                         topic_index=2,
+                         topic_index=14,
                          prompt_file=prompt_file,
                          out_file=out_file)

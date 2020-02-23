@@ -24,7 +24,7 @@ import logging
 import numpy as np
 import torch
 
-from configs import TopicalGenerationConfig, LDAConfig, GenerationConfig, LSIConfig
+from configs import LDAConfig, GenerationConfig, LSIConfig
 from lda_model import LDAModel
 from lsi_model import LSIModel
 from transformers import (
@@ -150,7 +150,7 @@ def adjust_length_to_model(length, max_sequence_length):
 
 def main():
     config_file = "configs/generation_topical_config.json"
-    config = TopicalGenerationConfig.from_json_file(config_file)
+    config = GenerationConfig.from_json_file(config_file)
 
     config.n_gpu = torch.cuda.device_count()
     config.device = torch.device("cuda" if torch.cuda.is_available() and not config.no_cuda else "cpu")
@@ -233,9 +233,6 @@ def main():
 
 
 def generate_lda_text(prompt_text, selected_topic_index, lda_config, generation_config):
-    generation_config.n_gpu = torch.cuda.device_count()
-    generation_config.device = torch.device("cuda" if torch.cuda.is_available() and not generation_config.no_cuda else "cpu")
-
     generation_config.device = torch.device("cuda" if torch.cuda.is_available() and not generation_config.no_cuda else "cpu")
     generation_config.n_gpu = torch.cuda.device_count()
 
@@ -285,9 +282,6 @@ def generate_lda_text(prompt_text, selected_topic_index, lda_config, generation_
 
 
 def generate_lsi_text(prompt_text, selected_topic_index, lsi_config, generation_config):
-    generation_config.n_gpu = torch.cuda.device_count()
-    generation_config.device = torch.device("cuda" if torch.cuda.is_available() and not generation_config.no_cuda else "cpu")
-
     generation_config.device = torch.device("cuda" if torch.cuda.is_available() and not generation_config.no_cuda else "cpu")
     generation_config.n_gpu = torch.cuda.device_count()
 
@@ -331,6 +325,67 @@ def generate_lsi_text(prompt_text, selected_topic_index, lsi_config, generation_
     text = text[: text.find(generation_config.stop_token) if generation_config.stop_token else None]
 
     return text
+
+
+def generate_document_like_text(prompt_text, doc_id, lda_config, generation_config):
+    lda_model = LDAModel(lda_config)
+    theta = lda_model.get_theta_matrix()
+    psi = lda_model.get_psi_matrix()
+
+    # get the original doc
+    docs = lda_model.get_docs()
+    doc = " ".join([t.strip('Ġ') for t in docs[doc_id]])
+    generation_config.max_length = len(doc.split()) # set the max_length to selected doc length
+
+    generation_config.device = torch.device(
+        "cuda" if torch.cuda.is_available() and not generation_config.no_cuda else "cpu")
+    generation_config.n_gpu = torch.cuda.device_count()
+
+    set_seed(generation_config)
+
+    # Initialize the model and tokenizer
+    try:
+        generation_config.model_type = generation_config.model_type.lower()
+        model_class, tokenizer_class = MODEL_CLASSES[generation_config.model_type]
+    except KeyError:
+        raise KeyError("the model {} you specified is not supported. You are welcome to add it and open a PR :)")
+
+    tokenizer = tokenizer_class.from_pretrained(generation_config.model_name_or_path)
+    model = model_class.from_pretrained(generation_config.model_name_or_path)
+    model.to(generation_config.device)
+
+
+
+
+    generation_config.max_length = adjust_length_to_model(generation_config.max_length,
+                                                          max_sequence_length=model.config.max_position_embeddings)
+    logger.info(generation_config)
+
+    # Different models need different input formatting and/or extra arguments
+    requires_preprocessing = generation_config.model_type in PREPROCESSING_FUNCTIONS.keys()
+    if requires_preprocessing:
+        prepare_input = PREPROCESSING_FUNCTIONS.get(generation_config.model_type)
+        prompt_text = prepare_input(generation_config, model, tokenizer, prompt_text)
+    encoded_prompt = tokenizer.encode(prompt_text, add_special_tokens=False, return_tensors="pt")
+    encoded_prompt = encoded_prompt.to(generation_config.device)
+
+
+
+    output_sequences = model.generate(
+        input_ids=encoded_prompt,
+        generation_config=generation_config,
+        psi=psi,
+        theta=theta,
+        doc_id=doc_id,
+        tokenizer=None,  # lda_model.tokenizer,
+    )
+
+    generated_sequence = output_sequences[0].tolist()
+    text = tokenizer.decode(generated_sequence, clean_up_tokenization_spaces=True)
+    text = text[: text.find(generation_config.stop_token) if generation_config.stop_token else None]
+
+
+    return text, doc
 
 
 def ctrl_text(prompt_text, topic, generation_config):
@@ -382,18 +437,18 @@ def ctrl_text(prompt_text, topic, generation_config):
 if __name__ == "__main__":
     #main()
     ##############LDA
-    # lda_config_file = "/home/rohola/codes/topical_language_generation/configs/alexa_lda_config.json"
-    # generation_config_file = "/home/rohola/codes/topical_language_generation/configs/generation_config.json"
-    #
-    # config = LDAConfig.from_json_file(lda_config_file)
-    # generation_config = GenerationConfig.from_json_file(generation_config_file)
-    #
-    # text = generate_lda_text(prompt_text="The issue is",
-    #                          selected_topic_index=2,
-    #                          lda_config=config,
-    #                          generation_config=generation_config
-    #                          )
-    # print(text)
+    lda_config_file = "/home/rohola/codes/topical_language_generation/configs/alexa_lda_config.json"
+    generation_config_file = "/home/rohola/codes/topical_language_generation/configs/generation_config.json"
+
+    config = LDAConfig.from_json_file(lda_config_file)
+    generation_config = GenerationConfig.from_json_file(generation_config_file)
+
+    text = generate_lda_text(prompt_text="films adapted from comic books",
+                             selected_topic_index=0,
+                             lda_config=config,
+                             generation_config=generation_config
+                             )
+    print(text)
 
     ###############LSI
     # lsi_config_file = "/home/rohola/codes/topical_language_generation/configs/alexa_lsi_config.json"
@@ -409,10 +464,22 @@ if __name__ == "__main__":
     # print(text)
 
     ##############CTRL
-    generation_config_file = "/home/rohola/codes/topical_language_generation/configs/ctrl_generation_config.json"
-    generation_config = GenerationConfig.from_json_file(generation_config_file)
-    text = ctrl_text(prompt_text="All devices",
-              topic="Computing",
-              generation_config=generation_config)
-
-    print(text)
+    # generation_config_file = "/home/rohola/codes/topical_language_generation/configs/ctrl_generation_config.json"
+    # generation_config = GenerationConfig.from_json_file(generation_config_file)
+    # text = ctrl_text(prompt_text="All devices",
+    #           topic="Computing",
+    #           generation_config=generation_config)
+    #
+    # print(text)
+    ###############document_like
+    # lda_config_file = "/home/rohola/codes/topical_language_generation/configs/alexa_lda_config.json"
+    # generation_config_file = "/home/rohola/codes/topical_language_generation/configs/generation_config.json"
+    #
+    # config = LDAConfig.from_json_file(lda_config_file)
+    # generation_config = GenerationConfig.from_json_file(generation_config_file)
+    # text, doc = generate_document_like_text(prompt_text="This is a",
+    #                                    doc_id=320,#173,
+    #                                     lda_config=config,
+    #                                     generation_config=generation_config)
+    # print("original: ", doc)
+    # print("generated: ", text)

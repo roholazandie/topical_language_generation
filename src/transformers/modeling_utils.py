@@ -561,6 +561,7 @@ class PreTrainedModel(nn.Module):
             psi=None,
             theta=None,
             topic_word_matrix=None,
+            doc_id=None,
             tokenizer=None,
             bos_token_id=None,
             pad_token_id=None,
@@ -726,17 +727,15 @@ class PreTrainedModel(nn.Module):
                 effective_batch_size,
             )
 
-        elif psi is not None and theta is not None:
+        elif doc_id is not None:
             output = self._generate_document_like(
                 input_ids,
+                generation_config,
+                cur_len,
                 psi,
                 theta,
-                cur_len,
-                max_length,
-                temperature,
-                top_k,
-                top_p,
-                repetition_penalty,
+                doc_id,
+                tokenizer,
                 pad_token_id,
                 eos_token_ids,
                 effective_batch_size,
@@ -1044,7 +1043,9 @@ class PreTrainedModel(nn.Module):
             # we should choose topics randomly with theta
             #print(selected_topic_index)
             topic_probs = torch.tensor(psi[selected_topic_index, :])
-            total_probs = self.fusion(next_token_logits.squeeze(0), topic_probs, config)
+            total_probs = self.fusion(next_token_logits.squeeze(0),
+                                      topic_probs,
+                                      config)
 
             # post_token_ids = (total_probs > 0.001).nonzero().flatten().tolist()
 
@@ -1103,47 +1104,49 @@ class PreTrainedModel(nn.Module):
     def _generate_document_like(
             self,
             input_ids,
-            selected_psi,
-            theta,
+            generation_config,
             cur_len,
-            max_length,
-            temperature,
-            top_k,
-            top_p,
-            repetition_penalty,
+            psi,
+            theta,
+            doc_id,
+            tokenizer,
             pad_token_id,
             eos_token_ids,
             batch_size,
     ):
 
+
         ##########this part need to be removed, we just have to pass doc_id
-        from lda_model import LDAModel
-        lda_config_file = "configs/alexa_lda_config.json"
-        lda_model = LDAModel(lda_config_file)
-        #theta = lda_model.get_theta_matrix()
-        #psi = lda_model.get_psi_matrix()
-        tokenizer = lda_model.tokenizer
-
-        corpus = lda_model.get_corpus()
-        model = lda_model.get_model()
-        doc_id = 1500
-        selected_bow_doc = corpus[doc_id]
-        document_topics = model.get_document_topics(selected_bow_doc)
-
-        theta = np.array([dt[1] for dt in document_topics])
-        doc_indices = np.array([dt[0] for dt in document_topics])
-        theta /= theta.sum()
-
-        psi_matrix = lda_model.get_psi_matrix()
+        # from lda_model import LDAModel
+        # lda_config_file = "configs/alexa_lda_config.json"
+        # lda_model = LDAModel(lda_config_file)
+        # #theta = lda_model.get_theta_matrix()
+        # #psi = lda_model.get_psi_matrix()
+        # tokenizer = lda_model.tokenizer
+        #
+        # corpus = lda_model.get_corpus()
+        # model = lda_model.get_model()
+        # doc_id = 1500
+        # selected_bow_doc = corpus[doc_id]
+        # document_topics = model.get_document_topics(selected_bow_doc)
+        #
+        # theta = np.array([dt[1] for dt in document_topics])
+        # doc_indices = np.array([dt[0] for dt in document_topics])
+        # theta /= theta.sum()
+        #
+        # psi_matrix = lda_model.get_psi_matrix()
 
         ###########################################################################
-
+        num_topics = theta.shape[1]
+        doc_theta = theta[doc_id, :]
+        doc_theta /= doc_theta.sum()
+        #######################################
         # current position / max lengths / length of generated sentences / unfinished sentences
         unfinished_sents = input_ids.new(batch_size).fill_(1)
 
         past = None
 
-        while cur_len < max_length:
+        while cur_len < generation_config.max_length:
             model_inputs = self.prepare_inputs_for_generation(input_ids, past=past)
             outputs = self(**model_inputs)
             next_token_logits = outputs[0][:, -1, :]
@@ -1153,61 +1156,62 @@ class PreTrainedModel(nn.Module):
                 past = outputs[1]
 
             # repetition penalty from CTRL paper (https://arxiv.org/abs/1909.05858)
-            if repetition_penalty != 1.0:
+            if generation_config.repetition_penalty != 1.0:
                 for i in range(batch_size):
                     for previous_token in set(input_ids[i].tolist()):
                         # if score < 0 then repetition penalty has to multiplied to reduce the previous token probability
                         if next_token_logits[i, previous_token] < 0:
-                            next_token_logits[i, previous_token] *= repetition_penalty
+                            next_token_logits[i, previous_token] *= generation_config.repetition_penalty
                         else:
-                            next_token_logits[i, previous_token] /= repetition_penalty
+                            next_token_logits[i, previous_token] /= generation_config.repetition_penalty
 
 
             # Temperature (higher temperature => more likely to sample low probability tokens)
-            if temperature != 1.0:
-                next_token_logits = next_token_logits / temperature
+            if generation_config.temperature != 1.0:
+                next_token_logits = next_token_logits / generation_config.temperature
             # Top-p/top-k filtering
-            next_token_logits = top_k_top_p_filtering(next_token_logits, top_k=top_k, top_p=top_p)
+            next_token_logits = top_k_top_p_filtering(next_token_logits,
+                                                      top_k=generation_config.top_k,
+                                                      top_p=generation_config.top_p)
             token_probs = F.softmax(next_token_logits, dim=-1)
 
             ########################
 
             # we should choose topics randomly with theta
-            z = np.random.choice(doc_indices, 1, p=theta)[0]
-            #z = 4
+            z = np.random.choice(list(range(num_topics)), 1, p=doc_theta)[0]
             print("selected topic is: ", z)
-            selected_psi = psi_matrix[z, :]
+            selected_psi = psi[z, :]
             selected_psi /= selected_psi.sum()
 
             topic_probs = torch.tensor(selected_psi)  # zero'th topic
-            total_probs = self.fusion(next_token_logits.squeeze(0), topic_probs, method="method3")
-
-            indices = np.where((token_probs[0, :] - total_probs) > 0.01)[0]
-            pre_post_token_probs = [(tokenizer.tokenizer.convert_ids_to_tokens(j),
-                  round(total_probs[j].item(), 4)) for j in indices.tolist()]
-            pre_post_token_probs = sorted(pre_post_token_probs, key=lambda x: x[1], reverse=True)
-            pre_minus_post = " ".join([str(x) for x in pre_post_token_probs])
-            print("pre_minus_post", pre_minus_post)
-
-
-            indices = np.where((total_probs - token_probs[0, :]) > 0.01)[0]
-
-            post_pre_token_probs = [(tokenizer.tokenizer.convert_ids_to_tokens(j),
-                  round(total_probs[j].item(), 4)) for j in indices.tolist()]
-            post_pre_token_probs = sorted(post_pre_token_probs, key=lambda x: x[1], reverse=True)
-            post_minus_pre = " ".join([str(x) for x in post_pre_token_probs])
-            print("post_minus_pre", post_minus_pre)
-
-
-
-            # Sample
-            print(total_probs.min())
+            total_probs = self.fusion(next_token_logits.squeeze(0), topic_probs, generation_config)
             next_token = torch.multinomial(total_probs, num_samples=1).squeeze(0)
 
-            print("next token: ", tokenizer.tokenizer.convert_ids_to_tokens([next_token]))
-            print("prob of generated token before fusion", token_probs[0, next_token.item()].item())
-            print("prob of generated token after fusion: ", total_probs[next_token.item()].item())
-            print("======================================================")
+            if tokenizer:
+                indices = np.where((token_probs[0, :] - total_probs) > 0.01)[0]
+                pre_post_token_probs = [(tokenizer.tokenizer.convert_ids_to_tokens(j),
+                      round(total_probs[j].item(), 4)) for j in indices.tolist()]
+                pre_post_token_probs = sorted(pre_post_token_probs, key=lambda x: x[1], reverse=True)
+                pre_minus_post = " ".join([str(x) for x in pre_post_token_probs])
+                print("pre_minus_post", pre_minus_post)
+
+
+                indices = np.where((total_probs - token_probs[0, :]) > 0.01)[0]
+
+                post_pre_token_probs = [(tokenizer.tokenizer.convert_ids_to_tokens(j),
+                      round(total_probs[j].item(), 4)) for j in indices.tolist()]
+                post_pre_token_probs = sorted(post_pre_token_probs, key=lambda x: x[1], reverse=True)
+                post_minus_pre = " ".join([str(x) for x in post_pre_token_probs])
+                print("post_minus_pre", post_minus_pre)
+
+                # Sample
+                print(total_probs.min())
+
+                print("next token: ", tokenizer.tokenizer.convert_ids_to_tokens([next_token]))
+                print("prob of generated token before fusion", token_probs[0, next_token.item()].item())
+                print("prob of generated token after fusion: ", total_probs[next_token.item()].item())
+                print("======================================================")
+
             # update generations and finished sentences
             tokens_to_add = next_token * unfinished_sents + pad_token_id * (1 - unfinished_sents)
             input_ids = torch.cat([input_ids, tokens_to_add.unsqueeze(-1)], dim=-1)
@@ -1220,7 +1224,7 @@ class PreTrainedModel(nn.Module):
                 break
 
         # add eos_token_ids to unfinished sentences
-        if cur_len == max_length:
+        if cur_len == generation_config.max_length:
             input_ids[:, -1].masked_fill_(unfinished_sents.to(dtype=torch.bool), eos_token_ids[0])
 
         return input_ids
