@@ -5,10 +5,10 @@ from lda_model import LDAModel
 import numpy as np
 from evaluation.metrics import TopicCoherence
 from lsi_model import LSIModel
-from topical_generation import generate_lsi_text, generate_lda_text, ctrl_text
+from topical_generation import generate_lsi_text, generate_lda_text, ctrl_text, pplm_text
 
 
-def eval_topic_coherence(config, generation_config, topic_index, prompt_file, out_file):
+def eval_topic_coherence(model, config, generation_config, prompt_file, out_file, topic_index=0):
     num_prompt_words = 4
     text_length = 10
 
@@ -19,25 +19,26 @@ def eval_topic_coherence(config, generation_config, topic_index, prompt_file, ou
             if len(coherences) > 200:
                 break
             prompt_text = " ".join(line.split()[:num_prompt_words])
-            if type(config) == LSIConfig:
+            if model == "lsi":
                 text = generate_lsi_text(prompt_text=prompt_text,
                                          selected_topic_index=topic_index,
                                          lsi_config=config,
                                          generation_config=generation_config)
-            elif type(config) == LDAConfig:
-                print("****************************************************************")
-                print("****************************************************************")
-                print("****************************************************************")
+            elif model == "lda":
                 text = generate_lda_text(prompt_text=prompt_text,
                                          selected_topic_index=topic_index,
                                          lda_config=config,
                                          generation_config=generation_config
                                          )
-            else:
-                #ctrl
+            elif model == "ctrl":
                 text = ctrl_text(prompt_text=prompt_text,
                                  topic="Opinion",
                                  generation_config=generation_config)
+
+            elif model == "pplm":
+                text = pplm_text(prompt_text=prompt_text,
+                          topic="military",
+                          generation_config=generation_config)
 
             if len(text.split()) > text_length:
                 print(text)
@@ -59,18 +60,18 @@ if __name__ == "__main__":
     #prompt_file = "/media/rohola/data/sample_texts/films/film_reviews.txt"
 
     #generation_config_file = "/home/rohola/codes/topical_language_generation/configs/ctrl_generation_config.json"
-    generation_config_file = "/home/rohola/codes/topical_language_generation/configs/generation_config.json"
+    generation_config_file = "/home/rohola/codes/topical_language_generation/configs/pplm_generation_config.json"
     generation_config = GenerationConfig.from_json_file(generation_config_file)
     prompt_file = "/media/data2/rohola_data/film_reviews.txt"
-    out_file = "/home/rohola/codes/topical_language_generation/results/topic_coherence/topic_coherence_gpt_lda_result3.txt"
+    out_file = "/home/rohola/codes/topical_language_generation/results/topic_coherence/topic_coherence_gpt_pplm.txt"
 
 
     print(generation_config)
     print(lda_config)
 
 
-    eval_topic_coherence(config=lda_config,
+    eval_topic_coherence(model="pplm",
+                         config=lda_config,
                          generation_config=generation_config,
-                         topic_index=14,
                          prompt_file=prompt_file,
                          out_file=out_file)

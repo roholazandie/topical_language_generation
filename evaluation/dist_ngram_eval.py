@@ -1,9 +1,9 @@
 from configs import LSIConfig, GenerationConfig, LDAConfig
-from topical_generation import generate_lsi_text, generate_lda_text
+from topical_generation import generate_lsi_text, generate_lda_text, pplm_text
 from evaluation.metrics import Distinct
 import numpy as np
 
-def eval_ngram(model, prompt_file, out_file):
+def eval_ngram(model, config, generation_config, prompt_file, out_file, topic=0):
     num_prompt_words = 4
     text_length = 50
     metric = Distinct()
@@ -13,38 +13,40 @@ def eval_ngram(model, prompt_file, out_file):
     dists2 = []
     dists3 = []
 
-    if model == "lsi":
-        lsi_config_file = "/home/rohola/codes/topical_language_generation/configs/alexa_lsi_config.json"
-        generation_config_file = "/home/rohola/codes/topical_language_generation/configs/generation_config.json"
-        lsi_config = LSIConfig.from_json_file(lsi_config_file)
-        generation_config = GenerationConfig.from_json_file(generation_config_file)
-    elif model == "lda":
-        lda_config_file = "/home/rohola/codes/topical_language_generation/configs/alexa_lda_config.json"
-        generation_config_file = "/home/rohola/codes/topical_language_generation/configs/generation_config.json"
-
-        lda_config = LDAConfig.from_json_file(lda_config_file)
-        generation_config = GenerationConfig.from_json_file(generation_config_file)
-
-    else:
-        raise ValueError("Unknown model")
+    # if model == "lsi":
+    #     lsi_config_file = "/home/rohola/codes/topical_language_generation/configs/alexa_lsi_config.json"
+    #     generation_config_file = "/home/rohola/codes/topical_language_generation/configs/generation_config.json"
+    #     lsi_config = LSIConfig.from_json_file(lsi_config_file)
+    #     generation_config = GenerationConfig.from_json_file(generation_config_file)
+    # elif model == "lda":
+    #     lda_config_file = "/home/rohola/codes/topical_language_generation/configs/alexa_lda_config.json"
+    #     generation_config_file = "/home/rohola/codes/topical_language_generation/configs/generation_config.json"
+    #
+    #     lda_config = LDAConfig.from_json_file(lda_config_file)
+    #     generation_config = GenerationConfig.from_json_file(generation_config_file)
+    #
+    # else:
+    #     raise ValueError("Unknown model")
 
     with open(prompt_file) as fr:
         for i, line in enumerate(fr):
-            if i > 5:
-                break
             prompt_text = " ".join(line.split()[:num_prompt_words])
             if model == "lsi":
                 text = generate_lsi_text(prompt_text=prompt_text,
-                                         selected_topic_index=2,
-                                         lsi_config=lsi_config,
+                                         selected_topic_index=topic,
+                                         lsi_config=config,
                                          generation_config=generation_config)
             elif model == "lda":
                 text = generate_lda_text(prompt_text=prompt_text,
-                                         selected_topic_index=2,
-                                         lda_config=lda_config,
+                                         selected_topic_index=topic,
+                                         lda_config=config,
                                          generation_config=generation_config
                                          )
 
+            elif model == "pplm":
+                text = pplm_text(prompt_text=prompt_text,
+                                 topic=topic,
+                                 generation_config=generation_config)
 
 
             if len(text.split()) > text_length:
@@ -82,7 +84,29 @@ def eval_ngram(model, prompt_file, out_file):
 
 
 if __name__ == "__main__":
-    prompt_file = "/media/rohola/data/sample_texts/films/film_reviews.txt"
-    out_file = "result.txt"
-    #prompt_file = "/media/data2/rohola_data/film_reviews.txt"
-    eval_ngram("lda", prompt_file, out_file)
+    #prompt_file = "/media/rohola/data/sample_texts/films/film_reviews.txt"
+    out_file = "/home/rohola/codes/topical_language_generation/results/distngram/pplm_result.txt"
+    prompt_file = "/media/data2/rohola_data/film_reviews.txt"
+
+    ##LSI
+    # lsi_config_file = "/home/rohola/codes/topical_language_generation/configs/alexa_lsi_config.json"
+    # generation_config_file = "/home/rohola/codes/topical_language_generation/configs/generation_config.json"
+    # lsi_config = LSIConfig.from_json_file(lsi_config_file)
+    # generation_config = GenerationConfig.from_json_file(generation_config_file)
+
+    ##LDA
+    # lda_config_file = "/home/rohola/codes/topical_language_generation/configs/alexa_lda_config.json"
+    # generation_config_file = "/home/rohola/codes/topical_language_generation/configs/generation_config.json"
+    # lda_config = LDAConfig.from_json_file(lda_config_file)
+    # generation_config = GenerationConfig.from_json_file(generation_config_file)
+
+
+    generation_config_file = "/home/rohola/codes/topical_language_generation/configs/pplm_generation_config.json"
+    generation_config = GenerationConfig.from_json_file(generation_config_file)
+
+    eval_ngram(model="pplm",
+               config=None,
+               generation_config=generation_config,
+               prompt_file=prompt_file,
+               out_file=out_file,
+               topic="religion")

@@ -235,60 +235,41 @@ def visualize_3d(config, G, node_sizes):
 
 
 
+def barchart(x, y):
+    assert len(x) == len(y), "the x and y should be the same length"
+    x = [str(i)+" "+str(xi) for i, xi in enumerate(x)]
+
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        x=x,
+        y=y,
+    ))
+
+    offpy(fig, filename="barchart.html", auto_open=True, show_link=False)
 
 
-# def three_d_nework_graph(x_positions, y_positions, z_positions, colors, labels="unknown"):
-#     trace2 = go.Scatter3d(x=x_positions,
-#                        y=y_positions,
-#                        z=z_positions,
-#                        mode='markers',
-#                        name='actors',
-#                        marker=go.scatter.Marker(symbol='dot',
-#                                      size=6,
-#                                      color=colors,
-#                                      colorscale='Viridis',
-#                                      line=go.Line(color='rgb(50,50,50)', width=0.5)
-#                                      ),
-#                        text=labels,
-#                        hoverinfo='text'
-#                        )
-#     axis = dict(showbackground=True,
-#                 showline=True,
-#                 zeroline=True,
-#                 showgrid=True,
-#                 showticklabels=True,
-#                 title=''
-#                 )
-#     layout = go.Layout(
-#         title="Network of coappearances of documents in the whole repository(3D visualization)",
-#         width=1000,
-#         height=1000,
-#         showlegend=False,
-#         scene=go.Scene(
-#             xaxis=go.XAxis(axis),
-#             yaxis=go.YAxis(axis),
-#             zaxis=go.ZAxis(axis),
-#         ),
-#         margin=go.Margin(
-#             t=100
-#         ),
-#         hovermode='closest',
-#         annotations=go.layout.Annotations([
-#             go.layout.Annotation(
-#                 showarrow=False,
-#                 text="",
-#                 xref='paper',
-#                 yref='paper',
-#                 x=0,
-#                 y=0.1,
-#                 xanchor='left',
-#                 yanchor='bottom',
-#                 font=go.Font(
-#                     size=14
-#                 )
-#             )
-#         ]), )
-#     data = go.Data([trace2])
-#     fig = go.Figure(data=data, layout=layout)
-#
-#     offpy(fig, filename="dd", auto_open=True, show_link=False)
+def multi_barchart(x, y, z, names=[]):
+    assert len(x) == len(y) == len(z), "the lengths should be the same"
+    x = [str(i) + " " + str(xi) for i, xi in enumerate(x)]
+
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        x=x,
+        y=y,
+        name=names[0]
+    ))
+
+    fig.add_trace(go.Bar(
+        x=x,
+        y=z,
+        name=names[1]
+    ))
+
+
+    offpy(fig, filename="multi_barchart.html", auto_open=True, show_link=False)
+
+
+
+
+if __name__ == "__main__":
+    barchart(["this", "is", "this"], [0.1, 0.5, 0.8])

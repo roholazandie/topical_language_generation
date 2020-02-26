@@ -722,9 +722,7 @@ def run_pplm_example(
         # keep the prefix, perturbed seq, original seq for each index
         generated_texts.append((tokenized_cond_text, pert_gen_tok_text, unpert_gen_tok_text))
 
-    return
-
-    #todo add a simple get text here with config file, or just move them to topical_generation.p
+    return pert_gen_text
 
 
 if __name__ == "__main__":

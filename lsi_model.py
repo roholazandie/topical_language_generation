@@ -182,5 +182,5 @@ if __name__ == "__main__":
     topic_words = [t[1] for t in tw]
     for topic in topic_words:
         print(topic)
-    sc = lsi.get_coherence_score("c_w2v")
-    print(sc)
+    # sc = lsi.get_coherence_score("c_w2v")
+    # print(sc)

@@ -95,5 +95,20 @@ import matplotlib.pyplot as plt
 #     print("##################")
 
 
-print("dfsd")
-print()
+from torch.distributions import kl_divergence
+from torch.distributions.beta import Beta
+from torch.distributions.categorical import Categorical
+
+
+m = Categorical(torch.tensor([0.25, 0.25, 0.25, 0.25]))
+print(m.sample())
+
+print(m.entropy())
+
+p = Beta(concentration0=1, concentration1=1)
+q = Beta(concentration0=6, concentration1=2)
+kldiv = kl_divergence(p, q)
+print(kldiv)
+
+# kl_scale = 1
+# kl_loss = kl_scale * ((corrected_probs * (corrected_probs / unpert_probs).log()).sum())

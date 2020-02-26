@@ -25,8 +25,10 @@ import numpy as np
 import torch
 
 from configs import LDAConfig, GenerationConfig, LSIConfig
+from pplm.run_pplm import set_generic_model_params, generate_text_pplm, full_text_generation
 from lda_model import LDAModel
 from lsi_model import LSIModel
+from run_pplm import DISCRIMINATOR_MODELS_PARAMS
 from transformers import (
     CTRLLMHeadModel,
     CTRLTokenizer,
@@ -271,7 +273,7 @@ def generate_lda_text(prompt_text, selected_topic_index, lda_config, generation_
         selected_topic_index=selected_topic_index,
         psi=psi,
         theta=theta,
-        tokenizer=None,#lda_model.tokenizer,
+        tokenizer=lda_model.tokenizer,
     )
 
     generated_sequence = output_sequences[0].tolist()
@@ -317,7 +319,7 @@ def generate_lsi_text(prompt_text, selected_topic_index, lsi_config, generation_
         generation_config=generation_config,
         topic_word_matrix=topic_word_matrix,
         selected_topic_index=selected_topic_index,
-        tokenizer=None,#lsi_model.tokenizer,
+        tokenizer=lsi_model.tokenizer,
     )
 
     generated_sequence = output_sequences[0].tolist()
@@ -353,9 +355,6 @@ def generate_document_like_text(prompt_text, doc_id, lda_config, generation_conf
     tokenizer = tokenizer_class.from_pretrained(generation_config.model_name_or_path)
     model = model_class.from_pretrained(generation_config.model_name_or_path)
     model.to(generation_config.device)
-
-
-
 
     generation_config.max_length = adjust_length_to_model(generation_config.max_length,
                                                           max_sequence_length=model.config.max_position_embeddings)
@@ -434,6 +433,83 @@ def ctrl_text(prompt_text, topic, generation_config):
     return text
 
 
+def pplm_text(prompt_text, topic, generation_config):
+    # set Random seed
+    torch.manual_seed(generation_config.seed)
+    np.random.seed(generation_config.seed)
+
+    # set the device
+    device = "cuda" if torch.cuda.is_available() and not generation_config.no_cuda else "cpu"
+
+    discrim = None
+    discrim_weights = None
+    discrim_meta = None
+    num_samples = 1
+    class_label = -1
+
+
+    #generation_config.model_type = "gpt2-medium"
+
+
+    if discrim == "generic":
+        set_generic_model_params(discrim_weights, discrim_meta)
+
+    if discrim is not None:
+        pretrained_model = DISCRIMINATOR_MODELS_PARAMS[discrim]["pretrained_model"]
+        print("discrim = {}, pretrained_model set " "to discriminator's = {}".format(discrim, pretrained_model))
+
+    # load pretrained model
+    model = GPT2LMHeadModel.from_pretrained(generation_config.model_type, output_hidden_states=True)
+    model.to(device)
+    model.eval()
+
+    # load tokenizer
+    tokenizer = GPT2Tokenizer.from_pretrained(generation_config.model_type)
+
+    # Freeze GPT-2 weights
+    for param in model.parameters():
+        param.requires_grad = False
+
+    # figure out conditioning text
+    tokenized_cond_text = tokenizer.encode(tokenizer.bos_token + prompt_text)
+
+    # print("= Prefix of sentence =")
+    # print(tokenizer.decode(tokenized_cond_text))
+    # print()
+
+    # generate unperturbed and perturbed texts
+
+    # full_text_generation returns:
+    # unpert_gen_tok_text, pert_gen_tok_texts, discrim_losses, losses_in_time
+    unpert_gen_tok_text, pert_gen_tok_texts, _, _ = full_text_generation(
+        model=model,
+        tokenizer=tokenizer,
+        context=tokenized_cond_text,
+        device=device,
+        num_samples=num_samples,
+        bag_of_words=topic,
+        discrim=discrim,
+        class_label=class_label,
+        length=generation_config.max_length,
+        stepsize=0.03,
+        temperature=generation_config.temperature,
+        top_k=generation_config.top_k,
+        sample=True,
+        num_iterations=3,
+        grad_length=10000,
+        horizon_length=1,
+        window_length=5,
+        decay=False,
+        gamma=1.5,
+        gm_scale=0.99,
+        kl_scale=0.01,
+        repetition_penalty=generation_config.repetition_penalty,
+    )
+
+    pert_gen_text = tokenizer.decode(pert_gen_tok_texts[0].tolist()[0][1:])
+
+    return pert_gen_text
+
 if __name__ == "__main__":
     #main()
     ##############LDA
@@ -443,7 +519,7 @@ if __name__ == "__main__":
     config = LDAConfig.from_json_file(lda_config_file)
     generation_config = GenerationConfig.from_json_file(generation_config_file)
 
-    text = generate_lda_text(prompt_text="films adapted from comic books",
+    text = generate_lda_text(prompt_text="This is a",
                              selected_topic_index=0,
                              lda_config=config,
                              generation_config=generation_config
@@ -457,7 +533,7 @@ if __name__ == "__main__":
     # generation_config = GenerationConfig.from_json_file(generation_config_file)
     #
     # text = generate_lsi_text(prompt_text="The issue is",
-    #                          selected_topic_index=2,
+    #                          selected_topic_index=0,
     #                          lsi_config=lsi_config,
     #                          generation_config=generation_config)
     #
@@ -483,3 +559,19 @@ if __name__ == "__main__":
     #                                     generation_config=generation_config)
     # print("original: ", doc)
     # print("generated: ", text)
+
+    ################PPLM
+    # import time
+    #
+    # topics = ["legal", "military", "politics", "religion", "science", "space", "technology"]
+    #
+    # generation_config_file = "/home/rohola/codes/topical_language_generation/configs/pplm_generation_config.json"
+    # generation_config = GenerationConfig.from_json_file(generation_config_file)
+    #
+    # t1 = time.time()
+    # text = pplm_text(prompt_text="The issue is",
+    #             topic=topics[1],
+    #             generation_config=generation_config)
+    # t2 = time.time()
+    # print(text)
+    # print(t2-t1)

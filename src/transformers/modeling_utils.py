@@ -24,8 +24,11 @@ from torch.nn import CrossEntropyLoss
 from torch.nn import functional as F
 
 import numpy as np
-from scipy.stats import entropy
 
+from torch.distributions.categorical import Categorical
+from torch.distributions import kl_divergence
+
+from visualization.plotly_visualize import barchart, multi_barchart
 from .configuration_utils import PretrainedConfig
 from .file_utils import (
     DUMMY_INPUTS,
@@ -875,6 +878,38 @@ class PreTrainedModel(nn.Module):
             total_probs = token_probs
             return total_probs
 
+        elif config.fusion_method == "method6":
+            #Modified Bayesian Approach
+            likelihood = F.softmax(logits).double()
+
+            prior = scores
+
+            id1 = likelihood >= prior
+            id2 = likelihood < prior
+
+            threshold = 0.01
+            id3 = prior > threshold
+            likelihood[id3] = 0.5
+
+            print("Num of tokens affected: ", sum(id2))
+
+            mult = torch.zeros_like(prior, dtype=prior.dtype)
+
+            mult[id1] = likelihood[id1]
+            mult[id2] = torch.mul(likelihood[id2], prior[id2])
+
+            posterior = mult/torch.sum(mult)
+
+            total_prob = posterior
+            if torch.sum(mult)==0:
+                print("only likelihood")
+                return likelihood
+            else:
+                print("posterior")
+
+            return total_prob
+
+
     def calculate_variance(self, total_probs):
         CUM_PROB_THRESHOLD = 0.95
         total_probs = total_probs.numpy()
@@ -1255,11 +1290,15 @@ class PreTrainedModel(nn.Module):
 
         # current position / max lengths / length of generated sentences / unfinished sentences
         unfinished_sents = input_ids.new(batch_size).fill_(1)
+        prompt_ids = input_ids
 
         past = None
 
-        token_perplexities = []
-        total_perplexities = []
+        perplexities = []
+        total_entropies = []
+        token_entropies = []
+        kl_divergences = []
+
         while cur_len < config.max_length:
             model_inputs = self.prepare_inputs_for_generation(input_ids, past=past)
             outputs = self(**model_inputs)
@@ -1287,10 +1326,6 @@ class PreTrainedModel(nn.Module):
             next_token_logits = top_k_top_p_filtering(next_token_logits, top_k=config.top_k, top_p=config.top_p)
             token_probs = F.softmax(next_token_logits, dim=-1)
 
-            ent = entropy(token_probs.numpy()[0], base=2)
-            token_perplexity = 2 ** ent
-
-
             ########################
 
             # we should choose topics randomly with theta
@@ -1299,12 +1334,14 @@ class PreTrainedModel(nn.Module):
                                       topic_probs,
                                       config)
 
-            ent = entropy(total_probs.numpy(), base=2)
-            total_perplexity = 2 ** ent
-            print("token perplexity, total perplexity: ", (token_perplexity, total_perplexity))
+            ####entropy and KL divergence
+            total_dist = Categorical(total_probs)
+            token_dist = Categorical(token_probs)
 
-            token_perplexities.append(token_perplexity)
-            total_perplexities.append(total_perplexity)
+            total_entropies.append(total_dist.entropy().item())
+            token_entropies.append(token_dist.entropy().item())
+
+            kl_divergences.append(kl_divergence(total_dist, token_dist).item())
 
             # Sample
             next_token = torch.multinomial(total_probs, num_samples=1).squeeze(0)
@@ -1330,6 +1367,8 @@ class PreTrainedModel(nn.Module):
                 print("prob of generated token after fusion: ", total_probs[next_token.item()].item())
                 print("======================================================")
 
+
+
             # update generations and finished sentences
             tokens_to_add = next_token * unfinished_sents + pad_token_id * (1 - unfinished_sents)
             input_ids = torch.cat([input_ids, tokens_to_add.unsqueeze(-1)], dim=-1)
@@ -1346,8 +1385,18 @@ class PreTrainedModel(nn.Module):
             input_ids[:, -1].masked_fill_(unfinished_sents.to(dtype=torch.bool), eos_token_ids[0])
 
 
-        print("mean token perplexity: ", np.mean(token_perplexities))
-        print("mean total perplexity: ", np.mean(total_perplexities))
+        plot = True
+        if plot:
+            #prompt_tokens = [tokenizer.tokenizer.convert_ids_to_tokens(i).strip('Ġ') for i in prompt_ids[0].tolist()]
+            tokens = [tokenizer.tokenizer.convert_ids_to_tokens(i).strip('Ġ') for i in input_ids[0].tolist()]
+            total_entropies = [0]*len(prompt_ids[0]) + total_entropies
+            token_entropies = [0]*len(prompt_ids[0]) + token_entropies
+            #barchart(tokens, total_entropies)
+            multi_barchart(tokens, total_entropies, token_entropies, names=["Total Entropy",
+                                                                           "Token Entropy"])
+
+            kl_divergences = [0]*len(prompt_ids[0]) + kl_divergences
+            barchart(tokens, kl_divergences)
 
 
         return input_ids
