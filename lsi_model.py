@@ -64,7 +64,6 @@ class LSIModel:
         pickle.dump(self.corpus, open(self.corpus_file, 'wb'))
         pickle.dump(self.dictionary, open(self.dictionary_file, 'wb'))
 
-
     def _run_model(self):
         tfidf = TfidfModel(self.corpus)
         corpus_tfidf = tfidf[self.corpus]
@@ -72,7 +71,6 @@ class LSIModel:
                                   id2word=self.dictionary,
                                   num_topics=self.config.num_topics)
         self.lsi_model.save(self.model_file)
-
 
     def get_docs(self):
         return pickle.load(open(self.docs_file, 'rb'))
@@ -96,8 +94,8 @@ class LSIModel:
                 lsi_model = self.get_model()
 
             topic_words = lsi_model.show_topics(self.config.num_topics,
-                                                     num_words=num_words,
-                                                     formatted=False)
+                                                num_words=num_words,
+                                                formatted=False)
             pickle.dump(topic_words, open(self.topic_top_words_file, 'wb'))
         else:
             topic_words = pickle.load(open(self.topic_top_words_file, 'rb'))
@@ -122,7 +120,6 @@ class LSIModel:
             except:
                 dictionary = self.get_dictionary()
 
-
             for i in range(len(dictionary)):
                 j = self.tokenizer.tokenizer.convert_tokens_to_ids(lsi_model.id2word[i])
                 topic_word_matrix[:, j] = topic_words[:, i]
@@ -137,7 +134,6 @@ class LSIModel:
         pickle.dump(topic_words_id, open(self.config.topic_top_words_file, 'wb'))
         return topic_words_id
 
-
     def _clear_cache(self):
         all_cached_files = [self.model_file,
                             self.topic_top_words_file,
@@ -147,7 +143,6 @@ class LSIModel:
                 os.remove(f)
             except:
                 pass
-
 
     def get_coherence_score(self, coherence="u_mass"):
         try:
@@ -166,18 +161,18 @@ class LSIModel:
             cm = CoherenceModel(model=model, texts=self.get_docs(),
                                 dictionary=self.get_dictionary(), coherence=coherence)
         coherence = cm.get_coherence()
-        #coherence = cm.get_coherence_per_topic()
+        # coherence = cm.get_coherence_per_topic()
         return coherence
 
 
 if __name__ == "__main__":
-    config_file = "configs/alexa_lsi_config.json" #-2.240693249483874
-    #config_file = "configs/nytimes_lsi_config.json" #-2.3255072569456896
-    #config_file = "configs/anes_lsi_config.json" #-3.35591499048434
-    #config_file = "configs/congress_lsi_config.json" #-2.842185966368092
+    config_file = "configs/alexa_lsi_config.json"  # -2.240693249483874
+    # config_file = "configs/nytimes_lsi_config.json" #-2.3255072569456896
+    # config_file = "configs/anes_lsi_config.json" #-3.35591499048434
+    # config_file = "configs/congress_lsi_config.json" #-2.842185966368092
     config = LSIConfig.from_json_file(config_file)
     lsi = LSIModel(config=config, build=False)
-    #lsi._start()
+    # lsi._start()
     tw = lsi.get_topic_words(num_words=10)
     topic_words = [t[1] for t in tw]
     for topic in topic_words:

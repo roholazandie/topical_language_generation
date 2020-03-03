@@ -337,7 +337,7 @@ def generate_document_like_text(prompt_text, doc_id, lda_config, generation_conf
     # get the original doc
     docs = lda_model.get_docs()
     doc = " ".join([t.strip('Ġ') for t in docs[doc_id]])
-    generation_config.max_length = len(doc.split()) # set the max_length to selected doc length
+    #generation_config.max_length = len(doc.split()) # set the max_length to selected doc length
 
     generation_config.device = torch.device(
         "cuda" if torch.cuda.is_available() and not generation_config.no_cuda else "cpu")
@@ -513,31 +513,31 @@ def pplm_text(prompt_text, topic, generation_config):
 if __name__ == "__main__":
     #main()
     ##############LDA
-    lda_config_file = "/home/rohola/codes/topical_language_generation/configs/alexa_lda_config.json"
-    generation_config_file = "/home/rohola/codes/topical_language_generation/configs/generation_config.json"
-
-    config = LDAConfig.from_json_file(lda_config_file)
-    generation_config = GenerationConfig.from_json_file(generation_config_file)
-
-    text = generate_lda_text(prompt_text="This is a",
-                             selected_topic_index=0,
-                             lda_config=config,
-                             generation_config=generation_config
-                             )
-    print(text)
-
-    ###############LSI
-    # lsi_config_file = "/home/rohola/codes/topical_language_generation/configs/alexa_lsi_config.json"
+    # lda_config_file = "/home/rohola/codes/topical_language_generation/configs/alexa_lda_config.json"
     # generation_config_file = "/home/rohola/codes/topical_language_generation/configs/generation_config.json"
-    # lsi_config = LSIConfig.from_json_file(lsi_config_file)
+    #
+    # config = LDAConfig.from_json_file(lda_config_file)
     # generation_config = GenerationConfig.from_json_file(generation_config_file)
     #
-    # text = generate_lsi_text(prompt_text="The issue is",
+    # text = generate_lda_text(prompt_text="This is a",
     #                          selected_topic_index=0,
-    #                          lsi_config=lsi_config,
-    #                          generation_config=generation_config)
-    #
+    #                          lda_config=config,
+    #                          generation_config=generation_config
+    #                          )
     # print(text)
+
+    ###############LSI
+    lsi_config_file = "/home/rohola/codes/topical_language_generation/configs/alexa_lsi_config.json"
+    generation_config_file = "/home/rohola/codes/topical_language_generation/configs/generation_config.json"
+    lsi_config = LSIConfig.from_json_file(lsi_config_file)
+    generation_config = GenerationConfig.from_json_file(generation_config_file)
+
+    text = generate_lsi_text(prompt_text="Most of the conversation was about ",
+                             selected_topic_index=0,
+                             lsi_config=lsi_config,
+                             generation_config=generation_config)
+
+    print(text)
 
     ##############CTRL
     # generation_config_file = "/home/rohola/codes/topical_language_generation/configs/ctrl_generation_config.json"

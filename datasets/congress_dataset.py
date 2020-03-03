@@ -22,10 +22,11 @@ class CongressDataset(Dataset):
             for file in files:
                 with open(root + "/" + file) as file_reader:
                     for line in file_reader:
-                        if self.do_tokenize:
-                            yield self._process_text(line)
-                        else:
-                            yield line
+                        if line.strip():
+                            if self.do_tokenize:
+                                yield self._process_text(line)
+                            else:
+                                yield line
 
 
 
