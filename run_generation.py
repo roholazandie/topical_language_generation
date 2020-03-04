@@ -169,7 +169,7 @@ def main():
     model = model_class.from_pretrained(config.model_name_or_path)
     model.to(config.device)
 
-    config.length = adjust_length_to_model(config.length, max_sequence_length=model.config.max_position_embeddings)
+    config.max_length = adjust_length_to_model(config.max_length, max_sequence_length=model.config.max_position_embeddings)
     logger.info(config)
 
     prompt_text = input("Model prompt >>> ")
@@ -184,11 +184,7 @@ def main():
 
     output_sequences = model.generate(
         input_ids=encoded_prompt,
-        max_length=config.length,
-        temperature=config.temperature,
-        top_k=config.top_k,
-        top_p=config.top_p,
-        repetition_penalty=config.repetition_penalty,
+        generation_config=config,
     )
 
     # Batch size == 1. to add more examples please use num_return_sequences > 1

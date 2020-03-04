@@ -28,6 +28,9 @@ import numpy as np
 from torch.distributions.categorical import Categorical
 from torch.distributions import kl_divergence
 
+#from utils.sparsemax import Sparsemax
+from utils.entmax import sparsemax, entmax15, entmax_bisect
+
 from visualization.plotly_visualize import barchart, multi_barchart
 from .configuration_utils import PretrainedConfig
 from .file_utils import (
@@ -779,7 +782,7 @@ class PreTrainedModel(nn.Module):
                 input_ids,
                 cur_len,
                 max_length=generation_config.max_length,
-                do_sample=do_sample,
+                do_sample=generation_config.do_sample,
                 temperature=generation_config.temperature,
                 top_k=generation_config.top_k,
                 top_p=generation_config.top_p,
@@ -797,6 +800,8 @@ class PreTrainedModel(nn.Module):
         '''
         scores are probs here (sum(probs)=1), they could be anything tho
         '''
+        #sparsemax = Sparsemax(dim=-1)
+
         if config.fusion_method == "method0": #no topic
             total_probs = F.softmax(logits, dim=-1)
             return total_probs
@@ -852,14 +857,34 @@ class PreTrainedModel(nn.Module):
                 #plt.hist(logscore2, bins=100, color='y')
                 #plt.show()
 
-            total_probs = F.softmax(logits + gamma * logscores, dim=-1)
+            total_logit = logits + gamma * logscores
+
+            ###trying out the sparsemax
+            #total_logit[total_logit == -float("Inf")] = -1e10
+            total_probs = sparsemax(total_logit, dim=-1)
+            ###
+
+            ##entmax
+            #total_probs = entmax15(total_logit, dim=-1)
+
+
+            #entmax
+            #total_logit[total_logit == -float("Inf")] = -1e10
+            #total_probs = entmax_bisect(total_logit, alpha=3, dim=-1)
+
+
+            #the usual softmax
+            #total_probs = F.softmax(total_logit, dim=-1)
+
+
             if any(torch.isnan(total_probs)):
+                print("NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN")
                 total_probs = F.softmax(logits, dim=-1)
 
             self.calculate_variance(total_probs)
             return total_probs
 
-        elif config.fusion_method=="method4":
+        elif config.fusion_method == "method4":
             #postnorm
             probs = F.softmax(logits)
             probs[scores > 1e-6] = 1.0
@@ -1131,6 +1156,10 @@ class PreTrainedModel(nn.Module):
                 print("next token: ", tokenizer.tokenizer.convert_ids_to_tokens([next_token]))
                 print("prob of generated token before fusion", token_probs[0, next_token.item()].item())
                 print("prob of generated token after fusion: ", total_probs[next_token.item()].item())
+
+                sorted_total_probs, sort_indices = total_probs.sort(descending=True)
+                print("num non zero probs ", sum(sorted_total_probs != 0.0).item())
+                print("allowed tokens: ", tokenizer.tokenizer.convert_ids_to_tokens(sort_indices[sorted_total_probs>0.0]))
                 print("======================================================")
 
 
@@ -1291,6 +1320,11 @@ class PreTrainedModel(nn.Module):
         """ Generate sequences for each example without beam search (num_beams == 1).
             All returned sequence are generated independantly.
         """
+        ##################
+
+
+        sparsemax = Sparsemax(dim=-1)
+        ###################
         # current position / max lengths / length of generated sentences / unfinished sentences
         unfinished_sents = input_ids.new(batch_size).fill_(1)
 
@@ -1322,7 +1356,10 @@ class PreTrainedModel(nn.Module):
                 # Top-p/top-k filtering
                 next_token_logits = top_k_top_p_filtering(next_token_logits, top_k=top_k, top_p=top_p)
                 # Sample
-                next_token = torch.multinomial(F.softmax(next_token_logits, dim=-1), num_samples=1).squeeze(1)
+                next_token_logits[next_token_logits == -float("Inf")] = -1e10
+                probs = F.softmax(next_token_logits, dim=-1)
+                #probs = sparsemax(next_token_logits)
+                next_token = torch.multinomial(probs, num_samples=1).squeeze(1)
             else:
                 # Greedy decoding
                 next_token = torch.argmax(next_token_logits, dim=-1)

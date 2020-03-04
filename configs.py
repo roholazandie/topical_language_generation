@@ -201,7 +201,8 @@ class GenerationConfig:
                  no_cuda="",
                  seed="",
                  stop_token="",
-                 num_beams=""):
+                 num_beams="",
+                 do_sample=""):
         self.model_type = model_type
         self.model_name_or_path = model_name_or_path
         self.cached_dir = cached_dir
@@ -218,6 +219,7 @@ class GenerationConfig:
         self.seed = seed
         self.stop_token = stop_token
         self.num_beams = num_beams
+        self.do_sample = do_sample
 
     @classmethod
     def from_dict(cls, json_object):
