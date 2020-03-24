@@ -57,21 +57,25 @@ if __name__ == "__main__":
     lda_config_file = "/home/rohola/codes/topical_language_generation/configs/alexa_lda_config.json"
     lda_config = LDAConfig.from_json_file(lda_config_file)
 
+    # lsi_config_file = "/home/rohola/codes/topical_language_generation/configs/alexa_lsi_config.json"
+    # lsi_config = LSIConfig.from_json_file(lsi_config_file)
+
     #prompt_file = "/media/rohola/data/sample_texts/films/film_reviews.txt"
 
     #generation_config_file = "/home/rohola/codes/topical_language_generation/configs/ctrl_generation_config.json"
-    generation_config_file = "/home/rohola/codes/topical_language_generation/configs/pplm_generation_config.json"
+    generation_config_file = "/home/rohola/codes/topical_language_generation/configs/generation_config.json"
     generation_config = GenerationConfig.from_json_file(generation_config_file)
     prompt_file = "/media/data2/rohola_data/film_reviews.txt"
-    out_file = "/home/rohola/codes/topical_language_generation/results/topic_coherence/topic_coherence_gpt_pplm.txt"
+    out_file = "/home/rohola/codes/topical_language_generation/results/topic_coherence/topic_coherence_gpt_lda_sparsemax.txt"
 
 
-    print(generation_config)
-    print(lda_config)
+    #print(generation_config)
+    #print(lda_config)
 
 
-    eval_topic_coherence(model="pplm",
+    eval_topic_coherence(model="lda",
                          config=lda_config,
                          generation_config=generation_config,
                          prompt_file=prompt_file,
-                         out_file=out_file)
+                         out_file=out_file,
+                         topic_index=1)

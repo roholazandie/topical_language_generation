@@ -1,5 +1,5 @@
 from configs import LSIConfig, GenerationConfig, LDAConfig
-from topical_generation import generate_lsi_text, generate_lda_text, pplm_text
+from topical_generation import generate_lsi_text, generate_lda_text, pplm_text, ctrl_text
 from evaluation.metrics import Distinct
 import numpy as np
 
@@ -48,21 +48,29 @@ def eval_ngram(model, config, generation_config, prompt_file, out_file, topic=0)
                                  topic=topic,
                                  generation_config=generation_config)
 
+            elif model == "ctrl":
+                text = ctrl_text(prompt_text=prompt_text,
+                                  topic=topic,
+                                  generation_config=generation_config)
+
 
             if len(text.split()) > text_length:
                 print(text)
                 print("###########################")
                 text = " ".join(text.split()[1:])
                 all_texts.append(text)
-                dist1 = metric.distinct_1(text)
+                #dist1 = metric.distinct_1(text)
+                dist1 = metric.distinct_n(text, 1)
                 print("dist1: ", dist1)
                 dists1.append(dist1)
 
-                dist2 = metric.distinct_2(text)
+                #dist2 = metric.distinct_2(text)
+                dist2 = metric.distinct_n(text, 2)
                 print("dist2: ", dist2)
                 dists2.append(dist2)
 
-                dist3 = metric.distinct_3(text)
+                #dist3 = metric.distinct_3(text)
+                dist3 = metric.distinct_n(text, 3)
                 print("dist3: ", dist3)
                 dists3.append(dist3)
 
@@ -85,7 +93,7 @@ def eval_ngram(model, config, generation_config, prompt_file, out_file, topic=0)
 
 if __name__ == "__main__":
     #prompt_file = "/media/rohola/data/sample_texts/films/film_reviews.txt"
-    out_file = "/home/rohola/codes/topical_language_generation/results/distngram/pplm_result.txt"
+    out_file = "/home/rohola/codes/topical_language_generation/results/distngram/lda_result.txt"
     prompt_file = "/media/data2/rohola_data/film_reviews.txt"
 
     ##LSI
@@ -101,12 +109,17 @@ if __name__ == "__main__":
     # generation_config = GenerationConfig.from_json_file(generation_config_file)
 
 
-    generation_config_file = "/home/rohola/codes/topical_language_generation/configs/pplm_generation_config.json"
+    ##CTRL
+    generation_config_file = "/home/rohola/codes/topical_language_generation/configs/ctrl_generation_config.json"
     generation_config = GenerationConfig.from_json_file(generation_config_file)
 
-    eval_ngram(model="pplm",
+
+    # generation_config_file = "/home/rohola/codes/topical_language_generation/configs/pplm_generation_config.json"
+    # generation_config = GenerationConfig.from_json_file(generation_config_file)
+
+    eval_ngram(model="ctrl",
                config=None,
                generation_config=generation_config,
                prompt_file=prompt_file,
                out_file=out_file,
-               topic="religion")
+               topic="Computing")

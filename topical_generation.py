@@ -519,8 +519,8 @@ if __name__ == "__main__":
     # config = LDAConfig.from_json_file(lda_config_file)
     # generation_config = GenerationConfig.from_json_file(generation_config_file)
     #
-    # text = generate_lda_text(prompt_text="This is a",
-    #                          selected_topic_index=0,
+    # text = generate_lda_text(prompt_text="Most of the conversation was about ",
+    #                          selected_topic_index=-1,
     #                          lda_config=config,
     #                          generation_config=generation_config
     #                          )
@@ -532,14 +532,16 @@ if __name__ == "__main__":
     lsi_config = LSIConfig.from_json_file(lsi_config_file)
     generation_config = GenerationConfig.from_json_file(generation_config_file)
 
-    text = generate_lsi_text(prompt_text="Most of the conversation was about ",
-                             selected_topic_index=0,
+    text = generate_lsi_text(
+                             #prompt_text="Most of the conversation was about ",
+                             prompt_text="The issue is",
+                             selected_topic_index=1,
                              lsi_config=lsi_config,
                              generation_config=generation_config)
 
     print(text)
 
-    ##############CTRL
+    #############CTRL
     # generation_config_file = "/home/rohola/codes/topical_language_generation/configs/ctrl_generation_config.json"
     # generation_config = GenerationConfig.from_json_file(generation_config_file)
     # text = ctrl_text(prompt_text="All devices",

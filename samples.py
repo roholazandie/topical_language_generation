@@ -112,3 +112,11 @@ print(kldiv)
 
 # kl_scale = 1
 # kl_loss = kl_scale * ((corrected_probs * (corrected_probs / unpert_probs).log()).sum())
+
+
+def f(y=[]):
+    y.append(1)
+    return y
+print(f(), f())
+
+#[1]

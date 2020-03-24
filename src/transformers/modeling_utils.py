@@ -881,7 +881,7 @@ class PreTrainedModel(nn.Module):
                 print("NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN")
                 total_probs = F.softmax(logits, dim=-1)
 
-            self.calculate_variance(total_probs)
+            #self.calculate_variance(total_probs)
             return total_probs
 
         elif config.fusion_method == "method4":
@@ -1051,7 +1051,7 @@ class PreTrainedModel(nn.Module):
         if cur_len == config.max_length:
             input_ids[:, -1].masked_fill_(unfinished_sents.to(dtype=torch.bool), eos_token_ids[0])
 
-        plot = True
+        plot = False
         if plot:
             # prompt_tokens = [tokenizer.tokenizer.convert_ids_to_tokens(i).strip('Ġ') for i in prompt_ids[0].tolist()]
             tokens = [tokenizer.tokenizer.convert_ids_to_tokens(i).strip('Ġ') for i in input_ids[0].tolist()]
@@ -1089,6 +1089,7 @@ class PreTrainedModel(nn.Module):
         total_entropies = []
         token_entropies = []
         kl_divergences = []
+        token_weights = []
 
         while cur_len < config.max_length:
             model_inputs = self.prepare_inputs_for_generation(input_ids, past=past)
@@ -1160,6 +1161,9 @@ class PreTrainedModel(nn.Module):
                 sorted_total_probs, sort_indices = total_probs.sort(descending=True)
                 print("num non zero probs ", sum(sorted_total_probs != 0.0).item())
                 print("allowed tokens: ", tokenizer.tokenizer.convert_ids_to_tokens(sort_indices[sorted_total_probs>0.0]))
+                print("top 5 words to choose from:", [(t, p) for (t, p) in zip(tokenizer.tokenizer.convert_ids_to_tokens(sort_indices[:5]), sorted_total_probs[:5].tolist())])
+
+                token_weights.append(token_probs[0, next_token.item()].item())
                 print("======================================================")
 
 
@@ -1180,7 +1184,7 @@ class PreTrainedModel(nn.Module):
             input_ids[:, -1].masked_fill_(unfinished_sents.to(dtype=torch.bool), eos_token_ids[0])
 
 
-        plot = True
+        plot = False
         if plot:
             #prompt_tokens = [tokenizer.tokenizer.convert_ids_to_tokens(i).strip('Ġ') for i in prompt_ids[0].tolist()]
             tokens = [tokenizer.tokenizer.convert_ids_to_tokens(i).strip('Ġ') for i in input_ids[0].tolist()]
@@ -1192,6 +1196,8 @@ class PreTrainedModel(nn.Module):
 
             kl_divergences = [0]*len(prompt_ids[0]) + kl_divergences
             barchart(tokens, kl_divergences)
+
+            return input_ids, token_weights
 
         return input_ids
 
@@ -1323,7 +1329,6 @@ class PreTrainedModel(nn.Module):
         ##################
 
 
-        sparsemax = Sparsemax(dim=-1)
         ###################
         # current position / max lengths / length of generated sentences / unfinished sentences
         unfinished_sents = input_ids.new(batch_size).fill_(1)

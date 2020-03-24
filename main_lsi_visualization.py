@@ -1,15 +1,18 @@
 from collections import namedtuple
 from dataclasses import dataclass
+
+from configs import LSIConfig
 from visualization.topic_modeling_semantic_network import visualize_semantic_netwrok
 from lsi_model import LSIModel
 
 
-#config_file = "configs/alexa_lsi_config.json"
+config_file = "configs/alexa_lsi_config.json"
 #config_file = "configs/nytimes_lsi_config.json"
 #config_file = "configs/anes_lsi_config.json"
-config_file = "configs/newsgroup_lsi_config.json"
+#config_file = "configs/newsgroup_lsi_config.json"
 
-lsi = LSIModel(config_file=config_file, build=True)
+config = LSIConfig.from_json_file(config_file)
+lsi = LSIModel(config)
 
 #lsi._start()
 
@@ -27,7 +30,7 @@ for topic in topic_words:
 class config:
     dimension: int = 2
     threshold: float = 0.001
-    node_size: float = 30
+    node_size: float = 150
     color_scale: str = "Viridis"
     title: str = "LSI"
     out_file_name: str = lsi.config.cached_dir+"/lsi_viz.html"

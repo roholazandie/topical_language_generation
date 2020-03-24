@@ -60,7 +60,7 @@ def visualize(config, G, node_size, auto_open=True):
         y=[],
         text=[],
         mode='markers+text',
-        textfont=dict(family='Calibri (Body)', size=14, color='black'),
+        textfont=dict(family='Calibri (Body)', size=18, color='black'),
         opacity=1,
         # hoverinfo='text',
         marker=go.Marker(

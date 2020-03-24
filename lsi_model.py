@@ -171,11 +171,12 @@ if __name__ == "__main__":
     # config_file = "configs/anes_lsi_config.json" #-3.35591499048434
     # config_file = "configs/congress_lsi_config.json" #-2.842185966368092
     config = LSIConfig.from_json_file(config_file)
-    lsi = LSIModel(config=config, build=False)
-    # lsi._start()
+    lsi = LSIModel(config=config, build=True)
+    #lsi._start()
     tw = lsi.get_topic_words(num_words=10)
     topic_words = [t[1] for t in tw]
     for topic in topic_words:
         print(topic)
     # sc = lsi.get_coherence_score("c_w2v")
     # print(sc)
+    #

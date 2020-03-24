@@ -1,10 +1,14 @@
+from collections import Counter
+
 import spacy
 from gensim.models import CoherenceModel
 import numpy as np
-from configs import LDAConfig
+from configs import LDAConfig, LSIConfig
 from lda_model import LDAModel
 from gensim.topic_coherence import segmentation
 import logging
+
+from lsi_model import LSIModel
 
 logger = logging.getLogger(__name__)
 
@@ -13,29 +17,48 @@ class Distinct:
     def __init__(self):
         self.nlp = spacy.load("en_core_web_sm")
 
-    def distinct_1(self, text):
-        tokens = [token.text for token in self.nlp(text)]
-        one_grams = set(tokens)
-        dist_1 = len(one_grams)/len(tokens)
-        return dist_1
+    # def distinct_1(self, text):
+    #     tokens = [token.text for token in self.nlp(text)]
+    #     one_grams = set(tokens)
+    #     dist_1 = len(one_grams)/len(tokens)
+    #     return dist_1
+    #
+    # def distinct_2(self, text):
+    #     tokens = [token.text for token in self.nlp(text)]
+    #     bigrams = set(zip(*[tokens[i:] for i in range(2)]))
+    #     dist2 = len(bigrams)/(len(tokens)-1)
+    #     return dist2
+    #
+    # def distinct_3(self, text):
+    #     tokens = [token.text for token in self.nlp(text)]
+    #     trigrams = set(zip(*[tokens[i:] for i in range(3)]))
+    #     dist3 = len(trigrams)/(len(tokens)-2)
+    #     return dist3
 
-    def distinct_2(self, text):
-        tokens = [token.text for token in self.nlp(text)]
-        bigrams = set(zip(*[tokens[i:] for i in range(2)]))
-        dist2 = len(bigrams)/(len(tokens)-1)
-        return dist2
 
-    def distinct_3(self, text):
-        tokens = [token.text for token in self.nlp(text)]
-        trigrams = set(zip(*[tokens[i:] for i in range(3)]))
-        dist3 = len(trigrams)/(len(tokens)-2)
-        return dist3
 
+    def distinct_n(self, example, n):
+        counter = Counter()
+        n_total = 0
+        n_distinct = 0
+        example = [token.text for token in self.nlp(example)]
+        for token in zip(*(example[i:] for i in range(n))):
+            if token not in counter:
+                n_distinct += 1
+            elif counter[token] == 1:
+                n_distinct -= 1
+            counter[token] += 1
+            n_total += 1
+
+        return float(n_distinct/n_total)
 
 class TopicCoherence:
 
-    def __init__(self, config: LDAConfig):
-        self.model = LDAModel(config)
+    def __init__(self, config):
+        if type(config) == LDAConfig:
+            self.model = LDAModel(config)
+        elif type(config) == LSIConfig:
+            self.model = LSIModel(config)
 
         # config_file = "../configs/alexa_lsi_config.json"
         # config = LSIConfig.from_json_file(config_file)
@@ -80,9 +103,11 @@ if __name__ == "__main__":
     print(dist2)
     print(dist3)
 
-    config_file = "../configs/alexa_lda_config.json"
-    config = LDAConfig.from_json_file(config_file)
-    topic_coherence = TopicCoherence(config)
-    doc = "text text text"
-    coherence = topic_coherence.get_coherence(doc)
-    print(coherence)
+    print("distinct", metrics.distinct_n(text, 2))
+
+    # config_file = "../configs/alexa_lda_config.json"
+    # config = LDAConfig.from_json_file(config_file)
+    # topic_coherence = TopicCoherence(config)
+    # doc = "text text text"
+    # coherence = topic_coherence.get_coherence(doc)
+    # print(coherence)

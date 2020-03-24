@@ -15,7 +15,7 @@ config_file = "configs/alexa_lsi_config.json"
 #config_file = "configs/newsgroup_lsi_config.json"
 
 config = LSIConfig.from_json_file(config_file)
-# wandb.init(config=config, project="topical_language_generation_sweeps")
+wandb.init(config=config, project="topical_language_generation_sweeps")
 
 #data preparation
 cached_dir = "/home/rohola/cached_models"
@@ -42,7 +42,7 @@ lsi_model = LsiModel(corpus_tfidf,
 cm = CoherenceModel(model=lsi_model, texts=docs, dictionary=dictionary, coherence='c_w2v')
 # coherence = cm.get_coherence()
 # print("coherence: ", coherence)
-#wandb.log({"coherence": cm.get_coherence()})
+wandb.log({"coherence": cm.get_coherence()})
 
 
 

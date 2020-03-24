@@ -273,7 +273,7 @@ if __name__ == "__main__":
     config_file = "/home/rohola/codes/topical_language_generation/configs/alexa_lda_config.json" #0.5320263
     #config_file = "configs/nytimes_lda_config.json" #0.63788706
     config = LDAConfig.from_json_file(config_file)
-    lda = LDAModel(config)
+    lda = LDAModel(config, build=False)
     #lda._start()
     psi = lda.get_psi_matrix()
     theta = lda.get_theta_matrix()
