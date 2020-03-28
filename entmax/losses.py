@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 from torch.autograd import Function
 
-from utils.entmax.activations import sparsemax, entmax15
-from utils.entmax.root_finding import entmax_bisect, sparsemax_bisect
+from entmax.activations import sparsemax, entmax15
+from entmax.root_finding import entmax_bisect, sparsemax_bisect
 
 
 class _GenericLoss(nn.Module):

@@ -8,8 +8,12 @@ from visualization.word_cloud_plot import word_cloud
 from gui.utils import convert_topical_model_names, convert_decoding_algorithm_names, convert_to_dataset_name, get_draft_config
 from topical_generation import generate_lda_text, generate_lsi_text
 from gui.SessionState import get
+from PIL import Image
 import pickle
 import os
+import sys
+
+#os.environ['PATH'] += ':'+ '/home/rohola/codes/topical_language_generation/utils/'
 
 
 session_state = get(dataset="",
@@ -24,6 +28,7 @@ session_state = get(dataset="",
                     temperature="",
                     repition_penalty="",
                     length="",
+                    seed_number="",
                     topic_words="",
                     fig="",
                     i="",
@@ -54,14 +59,14 @@ decoding_algorithm_name = st.sidebar.selectbox("Decoding Algorithm:", ["No algor
 session_state.fusion_algorithm = convert_decoding_algorithm_names(decoding_algorithm_name)
 
 
-session_state.gamma_value = float(st.sidebar.text_input("Gamma: ", 5))
-session_state.logit_threshold_value = float(st.sidebar.text_input("Logit Threshold: ", -100))
+session_state.gamma_value = float(st.sidebar.text_input("Gamma: ", 4))
+session_state.logit_threshold_value = float(st.sidebar.text_input("Logit Threshold: ", -95))
 
 session_state.temperature = float(st.sidebar.text_input("Temperature: ", 1))
-session_state.repition_penalty = float(st.sidebar.text_input("Repetition Penalty: ", 1))
+session_state.repition_penalty = float(st.sidebar.text_input("Repetition Penalty: ", 1.2))
 session_state.length = int(st.sidebar.text_input("Generated Text Length: ", 50))
 
-
+session_state.seed_number = int(st.sidebar.text_input("Seed Number: ", 41))
 
 topic_words = []
 
@@ -118,22 +123,14 @@ if selected_topic:
     session_state.i = topic_words_show.index(selected_topic)
     topic_words = [dict(tw) for tw in session_state.topic_words]
     topic_words = [{key: abs(tw[key]) for key in tw} for tw in topic_words] #we need absolute values rather than just scores with negative values
-    word_cloud(frequencies=topic_words[session_state.i])
-    st.pyplot()
+    image_file = 'cloud.png'
+    word_cloud(frequencies=topic_words[session_state.i], file_output=image_file)
+    cloud_image = Image.open(image_file)
+    st.image(cloud_image, caption='Cloud Word', use_column_width=True)
 
 prompt = st.text_input("Start writing here: ", "The issue is")
 
 if st.button("Generate"):
-    #todo get the color of the chosen topic and then use that color for words that are in the topic with prob>some_threshold
-    # print(prompt)
-    # html = "<span style='color: blue'>var</span> foo = <span style='color: green'>'bar'</span>"
-    # html = html.replace("\n", " ")
-    # st.write(html, unsafe_allow_html=True)
-
-    # lda = LDAModel(session_state.config)
-    # a = lda.get_psi_matrix()
-    # print("third time", a.max())
-
 
     #todo generation is probably have different best configs for lda and lsi
     generation_config_file = "configs/generation_config.json"
@@ -145,15 +142,13 @@ if st.button("Generate"):
     session_state.generation_config.fusion_method = session_state.fusion_algorithm
     session_state.generation_config.gamma = session_state.gamma_value
     session_state.generation_config.logit_threshold = session_state.logit_threshold_value
+    session_state.generation_config.seed = session_state.seed_number
     #json.dump(generation_config.__dict__, open(streamlit_generation_config_file, 'w'))
 
     text = ""
     if session_state.topic_model == "lda":
         with st.spinner('Thinking in LDA...'):
-            #print(session_state.config)
-            #print(session_state.topic_words[session_state.i])
-
-            text = generate_lda_text(prompt_text=prompt,
+            text, tokens, token_weights = generate_lda_text(prompt_text=prompt,
                                      selected_topic_index=session_state.i,
                                      lda_config=session_state.config,
                                      generation_config=session_state.generation_config)
@@ -162,9 +157,18 @@ if st.button("Generate"):
     elif session_state.topic_model == "lsi":
         with st.spinner('Thinking in LSI ...'):
             print(session_state.config)
-            text = generate_lsi_text(prompt_text=prompt,
-                                     selected_topic_index=session_state.i,
-                                     lsi_config=session_state.config,
-                                     generation_config=session_state.generation_config)
+            text, tokens, token_weights = generate_lsi_text(prompt_text=prompt,
+                                         selected_topic_index=session_state.i,
+                                         lsi_config=session_state.config,
+                                         generation_config=session_state.generation_config)
 
+
+
+    final_text = ""
+    for token, token_weight in zip(tokens, token_weights):
+        final_text += "<span style='background-color: rgba(255, 0, 0, "+str(token_weight)+")'>"+token+"</span> "
+
+    st.write(final_text, unsafe_allow_html=True)
+
+    st.write("<hr>", unsafe_allow_html=True)
     st.write(text)

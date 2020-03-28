@@ -29,9 +29,10 @@ from torch.distributions.categorical import Categorical
 from torch.distributions import kl_divergence
 
 #from utils.sparsemax import Sparsemax
-from utils.entmax import sparsemax, entmax15, entmax_bisect
-
+#from utils.entmax import sparsemax, entmax15, entmax_bisect
 from visualization.plotly_visualize import barchart, multi_barchart
+from entmax.activations import sparsemax
+
 from .configuration_utils import PretrainedConfig
 from .file_utils import (
     DUMMY_INPUTS,
@@ -859,9 +860,8 @@ class PreTrainedModel(nn.Module):
 
             total_logit = logits + gamma * logscores
 
-            ###trying out the sparsemax
             #total_logit[total_logit == -float("Inf")] = -1e10
-            total_probs = sparsemax(total_logit, dim=-1)
+            #total_probs = sparsemax(total_logit, dim=-1)
             ###
 
             ##entmax
@@ -874,7 +874,7 @@ class PreTrainedModel(nn.Module):
 
 
             #the usual softmax
-            #total_probs = F.softmax(total_logit, dim=-1)
+            total_probs = F.softmax(total_logit, dim=-1)
 
 
             if any(torch.isnan(total_probs)):
@@ -965,7 +965,7 @@ class PreTrainedModel(nn.Module):
         total_entropies = []
         token_entropies = []
         kl_divergences = []
-
+        token_weights = []
 
         while cur_len < config.max_length:
             model_inputs = self.prepare_inputs_for_generation(input_ids, past=past)
@@ -1029,6 +1029,16 @@ class PreTrainedModel(nn.Module):
                       round(total_probs[j].item(), 4)) for j in indices.tolist()]
                 post_pre_token_probs = sorted(post_pre_token_probs, key=lambda x: x[1], reverse=True)
                 post_minus_pre = " ".join([str(x) for x in post_pre_token_probs])
+
+                sorted_total_probs, sort_indices = total_probs.sort(descending=True)
+                print("num non zero probs ", sum(sorted_total_probs != 0.0).item())
+                print("allowed tokens: ",
+                      tokenizer.tokenizer.convert_ids_to_tokens(sort_indices[sorted_total_probs > 0.0]))
+                print("top 5 words to choose from:", [(t, p) for (t, p) in
+                                                      zip(tokenizer.tokenizer.convert_ids_to_tokens(sort_indices[:5]),
+                                                          sorted_total_probs[:5].tolist())])
+
+                token_weights.append(topic_probs[next_token].item() * 5)
                 print("post_minus_pre", post_minus_pre)
                 print("next token: ", tokenizer.tokenizer.convert_ids_to_tokens([next_token]))
                 print("prob of generated token before fusion", token_probs[0, next_token.item()].item())
@@ -1051,21 +1061,21 @@ class PreTrainedModel(nn.Module):
         if cur_len == config.max_length:
             input_ids[:, -1].masked_fill_(unfinished_sents.to(dtype=torch.bool), eos_token_ids[0])
 
-        plot = False
-        if plot:
-            # prompt_tokens = [tokenizer.tokenizer.convert_ids_to_tokens(i).strip('Ġ') for i in prompt_ids[0].tolist()]
-            tokens = [tokenizer.tokenizer.convert_ids_to_tokens(i).strip('Ġ') for i in input_ids[0].tolist()]
-            total_entropies = [0] * len(prompt_ids[0]) + total_entropies
-            token_entropies = [0] * len(prompt_ids[0]) + token_entropies
-            # barchart(tokens, total_entropies)
-            multi_barchart(tokens, total_entropies, token_entropies, names=["Total Entropy",
-                                                                            "Token Entropy"])
+        # plot = False
+        # if plot:
+        #     # prompt_tokens = [tokenizer.tokenizer.convert_ids_to_tokens(i).strip('Ġ') for i in prompt_ids[0].tolist()]
+        #     tokens = [tokenizer.tokenizer.convert_ids_to_tokens(i).strip('Ġ') for i in input_ids[0].tolist()]
+        #     total_entropies = [0] * len(prompt_ids[0]) + total_entropies
+        #     token_entropies = [0] * len(prompt_ids[0]) + token_entropies
+        #     # barchart(tokens, total_entropies)
+        #     multi_barchart(tokens, total_entropies, token_entropies, names=["Total Entropy",
+        #                                                                     "Token Entropy"])
+        #
+        #     kl_divergences = [0] * len(prompt_ids[0]) + kl_divergences
+        #     barchart(tokens, kl_divergences)
 
-            kl_divergences = [0] * len(prompt_ids[0]) + kl_divergences
-            barchart(tokens, kl_divergences)
 
-
-        return input_ids
+        return input_ids, total_entropies, token_entropies, kl_divergences, token_weights
 
 
     def _generate_topical_lsi(
@@ -1163,7 +1173,7 @@ class PreTrainedModel(nn.Module):
                 print("allowed tokens: ", tokenizer.tokenizer.convert_ids_to_tokens(sort_indices[sorted_total_probs>0.0]))
                 print("top 5 words to choose from:", [(t, p) for (t, p) in zip(tokenizer.tokenizer.convert_ids_to_tokens(sort_indices[:5]), sorted_total_probs[:5].tolist())])
 
-                token_weights.append(token_probs[0, next_token.item()].item())
+                token_weights.append(topic_probs[next_token].item()*5)
                 print("======================================================")
 
 
@@ -1183,23 +1193,23 @@ class PreTrainedModel(nn.Module):
         if cur_len == config.max_length:
             input_ids[:, -1].masked_fill_(unfinished_sents.to(dtype=torch.bool), eos_token_ids[0])
 
+        token_weights = [0] * len(prompt_ids[0]) + token_weights
 
-        plot = False
-        if plot:
-            #prompt_tokens = [tokenizer.tokenizer.convert_ids_to_tokens(i).strip('Ġ') for i in prompt_ids[0].tolist()]
-            tokens = [tokenizer.tokenizer.convert_ids_to_tokens(i).strip('Ġ') for i in input_ids[0].tolist()]
-            total_entropies = [0]*len(prompt_ids[0]) + total_entropies
-            token_entropies = [0]*len(prompt_ids[0]) + token_entropies
-            #barchart(tokens, total_entropies)
-            multi_barchart(tokens, total_entropies, token_entropies, names=["Total Entropy",
-                                                                           "Token Entropy"])
+        # plot = False
+        # if plot:
+        #     #prompt_tokens = [tokenizer.tokenizer.convert_ids_to_tokens(i).strip('Ġ') for i in prompt_ids[0].tolist()]
+        #     tokens = [tokenizer.tokenizer.convert_ids_to_tokens(i).strip('Ġ') for i in input_ids[0].tolist()]
+        #     total_entropies = [0]*len(prompt_ids[0]) + total_entropies
+        #     token_entropies = [0]*len(prompt_ids[0]) + token_entropies
+        #     #barchart(tokens, total_entropies)
+        #     multi_barchart(tokens, total_entropies, token_entropies, names=["Total Entropy",
+        #                                                                    "Token Entropy"])
+        #
+        #     kl_divergences = [0]*len(prompt_ids[0]) + kl_divergences
+        #     barchart(tokens, kl_divergences)
 
-            kl_divergences = [0]*len(prompt_ids[0]) + kl_divergences
-            barchart(tokens, kl_divergences)
 
-            return input_ids, token_weights
-
-        return input_ids
+        return input_ids, total_entropies, token_entropies, kl_divergences, token_weights
 
 
     def _generate_document_like(

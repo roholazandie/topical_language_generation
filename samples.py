@@ -120,3 +120,59 @@ def f(y=[]):
 print(f(), f())
 
 #[1]
+
+
+
+
+
+
+
+
+
+from gensim.topic_coherence import probability_estimation
+from gensim.corpora.hashdictionary import HashDictionary
+from gensim.models import word2vec
+
+texts = [
+     ['human', 'interface', 'computer'],
+     ['eps', 'user', 'interface', 'system'],
+     ['system', 'human', 'system', 'eps'],
+     ['user', 'response', 'time'],
+    ['trees'],
+     ['graph', 'trees']
+ ]
+dictionary = HashDictionary(texts)
+w2id = dictionary.token2id
+
+segmented_topics = [
+   [
+         (w2id['system'], w2id['graph']),
+         (w2id['computer'], w2id['graph']),
+         (w2id['computer'], w2id['system'])
+     ],
+    [
+        (w2id['computer'], w2id['graph']),
+        (w2id['user'], w2id['graph']),
+        (w2id['user'], w2id['computer'])]
+ ]
+# create corpus
+corpus = [dictionary.doc2bow(text) for text in texts]
+sentences = [
+     ['human', 'interface', 'computer'],
+    ['survey', 'user', 'computer', 'system', 'response', 'time']
+]
+model = word2vec.Word2Vec(sentences, size=100, min_count=1)
+accumulator = probability_estimation.p_word2vec(texts, segmented_topics, dictionary, 2, 1, model)
+
+
+a=1
+
+
+
+
+
+
+
+
+
+

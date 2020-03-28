@@ -237,20 +237,43 @@ def visualize_3d(config, G, node_sizes):
 
 def barchart(x, y):
     assert len(x) == len(y), "the x and y should be the same length"
-    x = [str(i)+" "+str(xi) for i, xi in enumerate(x)]
+    #x = [str(i)+" "+str(xi) for i, xi in enumerate(x)]
 
     fig = go.Figure()
-    fig.add_trace(go.Bar(
+
+
+    trace = go.Bar(
         x=x,
         y=y,
-    ))
+    )
+    fig.add_trace(trace)
+
+    fig.update_layout(
+        title='',
+        xaxis_tickfont_size=23,
+        yaxis=dict(
+            title='KL-Divergence',
+            titlefont_size=20,
+            tickfont_size=20,
+        ),
+        legend=dict(
+            x=0,
+            y=1.0,
+            bgcolor='rgba(255, 255, 255, 0)',
+            bordercolor='rgba(255, 255, 255, 0)'
+        ),
+        barmode='group',
+        bargap=0.05,  # gap between bars of adjacent location coordinates.
+        bargroupgap=0.1  # gap between bars of the same location coordinate.
+    )
+
 
     offpy(fig, filename="barchart.html", auto_open=True, show_link=False)
 
 
 def multi_barchart(x, y, z, names=[]):
     assert len(x) == len(y) == len(z), "the lengths should be the same"
-    x = [str(i) + " " + str(xi) for i, xi in enumerate(x)]
+    #x = [str(i) + " " + str(xi) for i, xi in enumerate(x)]
 
     fig = go.Figure()
     fig.add_trace(go.Bar(
@@ -265,6 +288,24 @@ def multi_barchart(x, y, z, names=[]):
         name=names[1]
     ))
 
+    fig.update_layout(
+        title='',
+        xaxis_tickfont_size=23,
+        yaxis=dict(
+            title='Entropy',
+            titlefont_size=20,
+            tickfont_size=20,
+        ),
+        legend=dict(
+            x=0,
+            y=1.0,
+            bgcolor='rgba(255, 255, 255, 0)',
+            bordercolor='rgba(255, 255, 255, 0)'
+        ),
+        barmode='group',
+        bargap=0.05,  # gap between bars of adjacent location coordinates.
+        bargroupgap=0.1  # gap between bars of the same location coordinate.
+    )
 
     offpy(fig, filename="multi_barchart.html", auto_open=True, show_link=False)
 

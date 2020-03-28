@@ -20,12 +20,12 @@ def eval_topic_coherence(model, config, generation_config, prompt_file, out_file
                 break
             prompt_text = " ".join(line.split()[:num_prompt_words])
             if model == "lsi":
-                text = generate_lsi_text(prompt_text=prompt_text,
+                text, _, _ = generate_lsi_text(prompt_text=prompt_text,
                                          selected_topic_index=topic_index,
                                          lsi_config=config,
                                          generation_config=generation_config)
             elif model == "lda":
-                text = generate_lda_text(prompt_text=prompt_text,
+                text, _, _ = generate_lda_text(prompt_text=prompt_text,
                                          selected_topic_index=topic_index,
                                          lda_config=config,
                                          generation_config=generation_config

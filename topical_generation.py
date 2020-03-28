@@ -17,7 +17,6 @@
 """ Conditional text generation with the auto-regressive models of the library (GPT/GPT-2/CTRL/Transformer-XL/XLNet)
 """
 
-
 import argparse
 import logging
 
@@ -28,7 +27,7 @@ from configs import LDAConfig, GenerationConfig, LSIConfig
 from pplm.run_pplm import set_generic_model_params, generate_text_pplm, full_text_generation
 from lda_model import LDAModel
 from lsi_model import LSIModel
-from run_pplm import DISCRIMINATOR_MODELS_PARAMS
+from pplm.run_pplm import DISCRIMINATOR_MODELS_PARAMS
 from transformers import (
     CTRLLMHeadModel,
     CTRLTokenizer,
@@ -44,6 +43,7 @@ from transformers import (
     XLNetTokenizer,
 )
 
+from visualization.plotly_visualize import barchart, multi_barchart
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s", datefmt="%m/%d/%Y %H:%M:%S", level=logging.INFO,
@@ -186,13 +186,13 @@ def main():
     encoded_prompt = tokenizer.encode(prompt_text, add_special_tokens=False, return_tensors="pt")
     encoded_prompt = encoded_prompt.to(config.device)
 
-    topical_model = "lsi" #"lda"
+    topical_model = "lsi"  # "lda"
     if topical_model == "lda":
         lda_config_file = "configs/alexa_lda_config.json"
         lda_model = LDAModel(lda_config_file)
         theta = lda_model.get_theta_matrix()
         psi = lda_model.get_psi_matrix()
-        #theta=None
+        # theta=None
 
         output_sequences = model.generate(
             input_ids=encoded_prompt,
@@ -222,8 +222,6 @@ def main():
             repetition_penalty=config.repetition_penalty,
         )
 
-
-
     # Batch size == 1. to add more examples please use num_return_sequences > 1
     generated_sequence = output_sequences[0].tolist()
     text = tokenizer.decode(generated_sequence, clean_up_tokenization_spaces=True)
@@ -234,8 +232,9 @@ def main():
     return text
 
 
-def generate_lda_text(prompt_text, selected_topic_index, lda_config, generation_config):
-    generation_config.device = torch.device("cuda" if torch.cuda.is_available() and not generation_config.no_cuda else "cpu")
+def generate_lda_text(prompt_text, selected_topic_index, lda_config, generation_config, plot=False):
+    generation_config.device = torch.device(
+        "cuda" if torch.cuda.is_available() and not generation_config.no_cuda else "cpu")
     generation_config.n_gpu = torch.cuda.device_count()
 
     set_seed(generation_config)
@@ -251,7 +250,8 @@ def generate_lda_text(prompt_text, selected_topic_index, lda_config, generation_
     model = model_class.from_pretrained(generation_config.model_name_or_path)
     model.to(generation_config.device)
 
-    generation_config.max_length = adjust_length_to_model(generation_config.max_length, max_sequence_length=model.config.max_position_embeddings)
+    generation_config.max_length = adjust_length_to_model(generation_config.max_length,
+                                                          max_sequence_length=model.config.max_position_embeddings)
     logger.info(generation_config)
 
     # Different models need different input formatting and/or extra arguments
@@ -263,11 +263,11 @@ def generate_lda_text(prompt_text, selected_topic_index, lda_config, generation_
     encoded_prompt = encoded_prompt.to(generation_config.device)
 
     lda_model = LDAModel(lda_config)
-    #theta = lda_model.get_theta_matrix()
+    # theta = lda_model.get_theta_matrix()
     psi = lda_model.get_psi_matrix()
     theta = None
 
-    output_sequences = model.generate(
+    output_sequences, total_entropies, token_entropies, kl_divergences, token_weights = model.generate(
         input_ids=encoded_prompt,
         generation_config=generation_config,
         selected_topic_index=selected_topic_index,
@@ -280,11 +280,24 @@ def generate_lda_text(prompt_text, selected_topic_index, lda_config, generation_
     text = tokenizer.decode(generated_sequence, clean_up_tokenization_spaces=True)
     text = text[: text.find(generation_config.stop_token) if generation_config.stop_token else None]
 
-    return text
+    tokens = [lda_model.tokenizer.tokenizer.convert_ids_to_tokens(i).strip('Ġ') for i in generated_sequence]
+    if plot:
+        prompt_padding = [0] * len(encoded_prompt[0])
+        total_entropies = prompt_padding + total_entropies
+        token_entropies = prompt_padding + token_entropies
+        # barchart(tokens, total_entropies)
+        multi_barchart(tokens, total_entropies, token_entropies, names=["Total Entropy",
+                                                                        "Token Entropy"])
+
+        kl_divergences = prompt_padding + kl_divergences
+        barchart(tokens, kl_divergences)
+
+    return text, tokens, token_weights
 
 
-def generate_lsi_text(prompt_text, selected_topic_index, lsi_config, generation_config):
-    generation_config.device = torch.device("cuda" if torch.cuda.is_available() and not generation_config.no_cuda else "cpu")
+def generate_lsi_text(prompt_text, selected_topic_index, lsi_config, generation_config, plot=False):
+    generation_config.device = torch.device(
+        "cuda" if torch.cuda.is_available() and not generation_config.no_cuda else "cpu")
     generation_config.n_gpu = torch.cuda.device_count()
 
     set_seed(generation_config)
@@ -300,7 +313,8 @@ def generate_lsi_text(prompt_text, selected_topic_index, lsi_config, generation_
     model = model_class.from_pretrained(generation_config.model_name_or_path)
     model.to(generation_config.device)
 
-    generation_config.max_length = adjust_length_to_model(generation_config.max_length, max_sequence_length=model.config.max_position_embeddings)
+    generation_config.max_length = adjust_length_to_model(generation_config.max_length,
+                                                          max_sequence_length=model.config.max_position_embeddings)
     logger.info(generation_config)
 
     # Different models need different input formatting and/or extra arguments
@@ -314,7 +328,7 @@ def generate_lsi_text(prompt_text, selected_topic_index, lsi_config, generation_
     lsi_model = LSIModel(lsi_config)
     topic_word_matrix = lsi_model.get_topic_words_matrix()
 
-    output_sequences = model.generate(
+    output_sequences, total_entropies, token_entropies, kl_divergences, token_weights = model.generate(
         input_ids=encoded_prompt,
         generation_config=generation_config,
         topic_word_matrix=topic_word_matrix,
@@ -326,7 +340,19 @@ def generate_lsi_text(prompt_text, selected_topic_index, lsi_config, generation_
     text = tokenizer.decode(generated_sequence, clean_up_tokenization_spaces=True)
     text = text[: text.find(generation_config.stop_token) if generation_config.stop_token else None]
 
-    return text
+    tokens = [lsi_model.tokenizer.tokenizer.convert_ids_to_tokens(i).strip('Ġ') for i in generated_sequence]
+    if plot:
+        prompt_padding = [0] * len(encoded_prompt[0])
+        total_entropies = prompt_padding + total_entropies
+        token_entropies = prompt_padding + token_entropies
+        # barchart(tokens, total_entropies)
+        multi_barchart(tokens, total_entropies, token_entropies, names=["Total Entropy",
+                                                                        "Token Entropy"])
+
+        kl_divergences = prompt_padding + kl_divergences
+        barchart(tokens, kl_divergences)
+
+    return text, tokens, token_weights
 
 
 def generate_document_like_text(prompt_text, doc_id, lda_config, generation_config):
@@ -337,7 +363,7 @@ def generate_document_like_text(prompt_text, doc_id, lda_config, generation_conf
     # get the original doc
     docs = lda_model.get_docs()
     doc = " ".join([t.strip('Ġ') for t in docs[doc_id]])
-    #generation_config.max_length = len(doc.split()) # set the max_length to selected doc length
+    # generation_config.max_length = len(doc.split()) # set the max_length to selected doc length
 
     generation_config.device = torch.device(
         "cuda" if torch.cuda.is_available() and not generation_config.no_cuda else "cpu")
@@ -368,8 +394,6 @@ def generate_document_like_text(prompt_text, doc_id, lda_config, generation_conf
     encoded_prompt = tokenizer.encode(prompt_text, add_special_tokens=False, return_tensors="pt")
     encoded_prompt = encoded_prompt.to(generation_config.device)
 
-
-
     output_sequences = model.generate(
         input_ids=encoded_prompt,
         generation_config=generation_config,
@@ -383,7 +407,6 @@ def generate_document_like_text(prompt_text, doc_id, lda_config, generation_conf
     text = tokenizer.decode(generated_sequence, clean_up_tokenization_spaces=True)
     text = text[: text.find(generation_config.stop_token) if generation_config.stop_token else None]
 
-
     return text, doc
 
 
@@ -391,7 +414,8 @@ def ctrl_text(prompt_text, topic, generation_config):
     assert generation_config.model_type == "ctrl", "wrong model_type"
     assert generation_config.model_name_or_path == "ctrl", "wrong model_name_or_path"
 
-    generation_config.device = torch.device("cuda:1" if torch.cuda.is_available() and not generation_config.no_cuda else "cpu")
+    generation_config.device = torch.device(
+        "cuda:1" if torch.cuda.is_available() and not generation_config.no_cuda else "cpu")
     generation_config.n_gpu = torch.cuda.device_count()
 
     set_seed(generation_config)
@@ -417,7 +441,6 @@ def ctrl_text(prompt_text, topic, generation_config):
     encoded_prompt = tokenizer.encode(prompt_text, add_special_tokens=False, return_tensors="pt")
     encoded_prompt = encoded_prompt.to(generation_config.device)
 
-
     output_sequences = model.generate(
         input_ids=encoded_prompt,
         generation_config=generation_config,
@@ -428,7 +451,7 @@ def ctrl_text(prompt_text, topic, generation_config):
     # Batch size == 1. to add more examples please use num_return_sequences > 1
     generated_sequence = output_sequences[0].tolist()
     text = tokenizer.decode(generated_sequence, clean_up_tokenization_spaces=True)
-    text = text[: text.find(generation_config.stop_token) if generation_config.stop_token else None]
+    # text = text[: text.find(generation_config.stop_token) if generation_config.stop_token else None]
 
     return text
 
@@ -447,9 +470,7 @@ def pplm_text(prompt_text, topic, generation_config):
     num_samples = 1
     class_label = -1
 
-
-    #generation_config.model_type = "gpt2-medium"
-
+    # generation_config.model_type = "gpt2-medium"
 
     if discrim == "generic":
         set_generic_model_params(discrim_weights, discrim_meta)
@@ -510,42 +531,43 @@ def pplm_text(prompt_text, topic, generation_config):
 
     return pert_gen_text
 
-if __name__ == "__main__":
-    #main()
-    ##############LDA
-    # lda_config_file = "/home/rohola/codes/topical_language_generation/configs/alexa_lda_config.json"
-    # generation_config_file = "/home/rohola/codes/topical_language_generation/configs/generation_config.json"
-    #
-    # config = LDAConfig.from_json_file(lda_config_file)
-    # generation_config = GenerationConfig.from_json_file(generation_config_file)
-    #
-    # text = generate_lda_text(prompt_text="Most of the conversation was about ",
-    #                          selected_topic_index=-1,
-    #                          lda_config=config,
-    #                          generation_config=generation_config
-    #                          )
-    # print(text)
 
-    ###############LSI
-    lsi_config_file = "/home/rohola/codes/topical_language_generation/configs/alexa_lsi_config.json"
+if __name__ == "__main__":
+    ##############LDA
+    lda_config_file = "/home/rohola/codes/topical_language_generation/configs/alexa_lda_config.json"
     generation_config_file = "/home/rohola/codes/topical_language_generation/configs/generation_config.json"
-    lsi_config = LSIConfig.from_json_file(lsi_config_file)
+
+    config = LDAConfig.from_json_file(lda_config_file)
     generation_config = GenerationConfig.from_json_file(generation_config_file)
 
-    text = generate_lsi_text(
-                             #prompt_text="Most of the conversation was about ",
-                             prompt_text="The issue is",
-                             selected_topic_index=1,
-                             lsi_config=lsi_config,
-                             generation_config=generation_config)
-
+    text, _, _ = generate_lda_text(prompt_text="The issue is ",
+                                   selected_topic_index=-1,
+                                   lda_config=config,
+                                   generation_config=generation_config,
+                                   plot=True
+                                   )
     print(text)
+
+    ###############LSI
+    # lsi_config_file = "/home/rohola/codes/topical_language_generation/configs/alexa_lsi_config.json"
+    # generation_config_file = "/home/rohola/codes/topical_language_generation/configs/generation_config.json"
+    # lsi_config = LSIConfig.from_json_file(lsi_config_file)
+    # generation_config = GenerationConfig.from_json_file(generation_config_file)
+    #
+    # text, _, _ = generate_lsi_text(
+    #                          #prompt_text="Most of the conversation was about ",
+    #                          prompt_text="The issue is",
+    #                          selected_topic_index=0,
+    #                          lsi_config=lsi_config,
+    #                          generation_config=generation_config, plot=True)
+    #
+    # print(text)
 
     #############CTRL
     # generation_config_file = "/home/rohola/codes/topical_language_generation/configs/ctrl_generation_config.json"
     # generation_config = GenerationConfig.from_json_file(generation_config_file)
-    # text = ctrl_text(prompt_text="All devices",
-    #           topic="Computing",
+    # text = ctrl_text(prompt_text="the issue is that",
+    #           topic="Politics",
     #           generation_config=generation_config)
     #
     # print(text)
@@ -572,7 +594,7 @@ if __name__ == "__main__":
     #
     # t1 = time.time()
     # text = pplm_text(prompt_text="The issue is",
-    #             topic=topics[1],
+    #             topic=topics[2],
     #             generation_config=generation_config)
     # t2 = time.time()
     # print(text)
