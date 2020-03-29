@@ -966,6 +966,7 @@ class PreTrainedModel(nn.Module):
         token_entropies = []
         kl_divergences = []
         token_weights = []
+        all_top_words = []
 
         while cur_len < config.max_length:
             model_inputs = self.prepare_inputs_for_generation(input_ids, past=past)
@@ -1034,9 +1035,11 @@ class PreTrainedModel(nn.Module):
                 print("num non zero probs ", sum(sorted_total_probs != 0.0).item())
                 print("allowed tokens: ",
                       tokenizer.tokenizer.convert_ids_to_tokens(sort_indices[sorted_total_probs > 0.0]))
-                print("top 5 words to choose from:", [(t, p) for (t, p) in
-                                                      zip(tokenizer.tokenizer.convert_ids_to_tokens(sort_indices[:5]),
-                                                          sorted_total_probs[:5].tolist())])
+
+                top_words = [(t, p) for (t, p) in zip(tokenizer.tokenizer.convert_ids_to_tokens(sort_indices[:5]),
+                                                          sorted_total_probs[:5].tolist())]
+                all_top_words.append(top_words)
+                print("top 5 words to choose from:", top_words)
 
                 token_weights.append(topic_probs[next_token].item() * 5)
                 print("post_minus_pre", post_minus_pre)
@@ -1075,7 +1078,7 @@ class PreTrainedModel(nn.Module):
         #     barchart(tokens, kl_divergences)
 
 
-        return input_ids, total_entropies, token_entropies, kl_divergences, token_weights
+        return input_ids, total_entropies, token_entropies, kl_divergences, token_weights, all_top_words
 
 
     def _generate_topical_lsi(
@@ -1100,6 +1103,7 @@ class PreTrainedModel(nn.Module):
         token_entropies = []
         kl_divergences = []
         token_weights = []
+        all_top_words = []
 
         while cur_len < config.max_length:
             model_inputs = self.prepare_inputs_for_generation(input_ids, past=past)
@@ -1171,7 +1175,9 @@ class PreTrainedModel(nn.Module):
                 sorted_total_probs, sort_indices = total_probs.sort(descending=True)
                 print("num non zero probs ", sum(sorted_total_probs != 0.0).item())
                 print("allowed tokens: ", tokenizer.tokenizer.convert_ids_to_tokens(sort_indices[sorted_total_probs>0.0]))
-                print("top 5 words to choose from:", [(t, p) for (t, p) in zip(tokenizer.tokenizer.convert_ids_to_tokens(sort_indices[:5]), sorted_total_probs[:5].tolist())])
+                top_words = [(t, p) for (t, p) in zip(tokenizer.tokenizer.convert_ids_to_tokens(sort_indices[:5]), sorted_total_probs[:5].tolist())]
+                all_top_words.append(top_words)
+                print("top 5 words to choose from:", top_words)
 
                 token_weights.append(topic_probs[next_token].item()*5)
                 print("======================================================")
@@ -1209,7 +1215,7 @@ class PreTrainedModel(nn.Module):
         #     barchart(tokens, kl_divergences)
 
 
-        return input_ids, total_entropies, token_entropies, kl_divergences, token_weights
+        return input_ids, total_entropies, token_entropies, kl_divergences, token_weights, all_top_words
 
 
     def _generate_document_like(

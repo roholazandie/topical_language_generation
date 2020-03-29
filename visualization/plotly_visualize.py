@@ -271,7 +271,7 @@ def barchart(x, y):
     offpy(fig, filename="barchart.html", auto_open=True, show_link=False)
 
 
-def multi_barchart(x, y, z, names=[]):
+def multi_barchart(x, y, z, names):
     assert len(x) == len(y) == len(z), "the lengths should be the same"
     #x = [str(i) + " " + str(xi) for i, xi in enumerate(x)]
 
@@ -300,16 +300,62 @@ def multi_barchart(x, y, z, names=[]):
             x=0,
             y=1.0,
             bgcolor='rgba(255, 255, 255, 0)',
-            bordercolor='rgba(255, 255, 255, 0)'
+            bordercolor='rgba(255, 255, 255, 0)',
+            font=dict(
+                family="sans-serif",
+                size=20,
+                color="black"
+            ),
         ),
         barmode='group',
         bargap=0.05,  # gap between bars of adjacent location coordinates.
         bargroupgap=0.1  # gap between bars of the same location coordinate.
+
+    # legend = dict(
+    #     x=0,
+    #     y=1,
+    #     traceorder="normal",
+    #
+    #     bgcolor="LightSteelBlue",
+    #     bordercolor="Black",
+    #     borderwidth=2
+    # )
     )
 
     offpy(fig, filename="multi_barchart.html", auto_open=True, show_link=False)
 
 
+import numpy as np
+def top_words_prob_plot(all_top_words):
+    from plotly.subplots import make_subplots
+
+    fig = make_subplots(rows=len(all_top_words), cols=1)
+    for i, top_words in enumerate(all_top_words):
+        x = [x[0].strip('Ġ') for x in top_words]
+        y = [x[1] for x in top_words]
+
+
+
+        trace = go.Bar(
+            x=x,
+            y=y,
+            name=str(i)
+        )
+        fig.add_trace(trace, row=i+1, col=1)
+
+    fig.update_layout(
+        autosize=False,
+        width=500,
+        height=1000,
+
+        yaxis=dict(
+                    title='Entropy',
+                    titlefont_size=10,
+                    tickfont_size=10,
+                ),
+
+    )
+    offpy(fig, filename="top_words.html", auto_open=True, show_link=False)
 
 
 if __name__ == "__main__":

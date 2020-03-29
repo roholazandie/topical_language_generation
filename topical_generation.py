@@ -43,7 +43,7 @@ from transformers import (
     XLNetTokenizer,
 )
 
-from visualization.plotly_visualize import barchart, multi_barchart
+from visualization.plotly_visualize import barchart, multi_barchart, top_words_prob_plot
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s", datefmt="%m/%d/%Y %H:%M:%S", level=logging.INFO,
@@ -267,7 +267,7 @@ def generate_lda_text(prompt_text, selected_topic_index, lda_config, generation_
     psi = lda_model.get_psi_matrix()
     theta = None
 
-    output_sequences, total_entropies, token_entropies, kl_divergences, token_weights = model.generate(
+    output_sequences, total_entropies, token_entropies, kl_divergences, token_weights, all_top_words = model.generate(
         input_ids=encoded_prompt,
         generation_config=generation_config,
         selected_topic_index=selected_topic_index,
@@ -282,15 +282,23 @@ def generate_lda_text(prompt_text, selected_topic_index, lda_config, generation_
 
     tokens = [lda_model.tokenizer.tokenizer.convert_ids_to_tokens(i).strip('Ġ') for i in generated_sequence]
     if plot:
-        prompt_padding = [0] * len(encoded_prompt[0])
-        total_entropies = prompt_padding + total_entropies
-        token_entropies = prompt_padding + token_entropies
+        show_prompt = False
+        if show_prompt:
+            prompt_padding = [0] * len(encoded_prompt[0])
+            total_entropies = prompt_padding + total_entropies
+            token_entropies = prompt_padding + token_entropies
+            kl_divergences = prompt_padding + kl_divergences
+        else:
+            tokens = tokens[len(encoded_prompt[0]):]
+
+
         # barchart(tokens, total_entropies)
         multi_barchart(tokens, total_entropies, token_entropies, names=["Total Entropy",
                                                                         "Token Entropy"])
-
-        kl_divergences = prompt_padding + kl_divergences
         barchart(tokens, kl_divergences)
+
+        top_words_prob_plot(all_top_words)
+
 
     return text, tokens, token_weights
 
@@ -328,7 +336,7 @@ def generate_lsi_text(prompt_text, selected_topic_index, lsi_config, generation_
     lsi_model = LSIModel(lsi_config)
     topic_word_matrix = lsi_model.get_topic_words_matrix()
 
-    output_sequences, total_entropies, token_entropies, kl_divergences, token_weights = model.generate(
+    output_sequences, total_entropies, token_entropies, kl_divergences, token_weights, all_top_words = model.generate(
         input_ids=encoded_prompt,
         generation_config=generation_config,
         topic_word_matrix=topic_word_matrix,
@@ -342,15 +350,24 @@ def generate_lsi_text(prompt_text, selected_topic_index, lsi_config, generation_
 
     tokens = [lsi_model.tokenizer.tokenizer.convert_ids_to_tokens(i).strip('Ġ') for i in generated_sequence]
     if plot:
-        prompt_padding = [0] * len(encoded_prompt[0])
-        total_entropies = prompt_padding + total_entropies
-        token_entropies = prompt_padding + token_entropies
+        show_prompt = False
+        if show_prompt:
+            prompt_padding = [0] * len(encoded_prompt[0])
+            total_entropies = prompt_padding + total_entropies
+            token_entropies = prompt_padding + token_entropies
+            kl_divergences = prompt_padding + kl_divergences
+        else:
+            tokens = tokens[len(encoded_prompt[0]):]
+
+
         # barchart(tokens, total_entropies)
         multi_barchart(tokens, total_entropies, token_entropies, names=["Total Entropy",
                                                                         "Token Entropy"])
 
-        kl_divergences = prompt_padding + kl_divergences
+
         barchart(tokens, kl_divergences)
+
+        top_words_prob_plot(all_top_words)
 
     return text, tokens, token_weights
 
@@ -534,34 +551,34 @@ def pplm_text(prompt_text, topic, generation_config):
 
 if __name__ == "__main__":
     ##############LDA
-    lda_config_file = "/home/rohola/codes/topical_language_generation/configs/alexa_lda_config.json"
-    generation_config_file = "/home/rohola/codes/topical_language_generation/configs/generation_config.json"
-
-    config = LDAConfig.from_json_file(lda_config_file)
-    generation_config = GenerationConfig.from_json_file(generation_config_file)
-
-    text, _, _ = generate_lda_text(prompt_text="The issue is ",
-                                   selected_topic_index=-1,
-                                   lda_config=config,
-                                   generation_config=generation_config,
-                                   plot=True
-                                   )
-    print(text)
-
-    ###############LSI
-    # lsi_config_file = "/home/rohola/codes/topical_language_generation/configs/alexa_lsi_config.json"
+    # lda_config_file = "/home/rohola/codes/topical_language_generation/configs/alexa_lda_config.json"
     # generation_config_file = "/home/rohola/codes/topical_language_generation/configs/generation_config.json"
-    # lsi_config = LSIConfig.from_json_file(lsi_config_file)
+    #
+    # config = LDAConfig.from_json_file(lda_config_file)
     # generation_config = GenerationConfig.from_json_file(generation_config_file)
     #
-    # text, _, _ = generate_lsi_text(
-    #                          #prompt_text="Most of the conversation was about ",
-    #                          prompt_text="The issue is",
-    #                          selected_topic_index=0,
-    #                          lsi_config=lsi_config,
-    #                          generation_config=generation_config, plot=True)
-    #
+    # text, _, _ = generate_lda_text(prompt_text="The issue is ",
+    #                                selected_topic_index=-1,
+    #                                lda_config=config,
+    #                                generation_config=generation_config,
+    #                                plot=True
+    #                                )
     # print(text)
+
+    ###############LSI
+    lsi_config_file = "/home/rohola/codes/topical_language_generation/configs/alexa_lsi_config.json"
+    generation_config_file = "/home/rohola/codes/topical_language_generation/configs/generation_config.json"
+    lsi_config = LSIConfig.from_json_file(lsi_config_file)
+    generation_config = GenerationConfig.from_json_file(generation_config_file)
+
+    text, _, _ = generate_lsi_text(
+                             #prompt_text="Most of the conversation was about ",
+                             prompt_text="The issue is",
+                             selected_topic_index=0,
+                             lsi_config=lsi_config,
+                             generation_config=generation_config, plot=True)
+
+    print(text)
 
     #############CTRL
     # generation_config_file = "/home/rohola/codes/topical_language_generation/configs/ctrl_generation_config.json"
