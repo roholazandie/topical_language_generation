@@ -197,5 +197,58 @@ def main():
     return text
 
 
+def generate_unconditional_text(prompt_text, generation_config):
+    generation_config.n_gpu = torch.cuda.device_count()
+    generation_config.device = torch.device("cuda" if torch.cuda.is_available() and not generation_config.no_cuda else "cpu")
+
+    generation_config.device = torch.device("cuda" if torch.cuda.is_available() and not generation_config.no_cuda else "cpu")
+    generation_config.n_gpu = torch.cuda.device_count()
+
+    set_seed(generation_config)
+
+    # Initialize the model and tokenizer
+    try:
+        generation_config.model_type = generation_config.model_type.lower()
+        model_class, tokenizer_class = MODEL_CLASSES[generation_config.model_type]
+    except KeyError:
+        raise KeyError("the model {} you specified is not supported. You are welcome to add it and open a PR :)")
+
+    tokenizer = tokenizer_class.from_pretrained(generation_config.model_name_or_path)
+    model = model_class.from_pretrained(generation_config.model_name_or_path)
+    model.to(generation_config.device)
+
+    generation_config.max_length = adjust_length_to_model(generation_config.max_length,
+                                                          max_sequence_length=model.config.max_position_embeddings)
+    logger.info(generation_config)
+
+    # Different models need different input formatting and/or extra arguments
+    requires_preprocessing = generation_config.model_type in PREPROCESSING_FUNCTIONS.keys()
+    if requires_preprocessing:
+        prepare_input = PREPROCESSING_FUNCTIONS.get(generation_config.model_type)
+        prompt_text = prepare_input(generation_config, model, tokenizer, prompt_text)
+    encoded_prompt = tokenizer.encode(prompt_text, add_special_tokens=False, return_tensors="pt")
+    encoded_prompt = encoded_prompt.to(generation_config.device)
+
+    output_sequences = model.generate(
+        input_ids=encoded_prompt,
+        generation_config=generation_config,
+    )
+
+    # Batch size == 1. to add more examples please use num_return_sequences > 1
+    generated_sequence = output_sequences[0].tolist()
+    text = tokenizer.decode(generated_sequence, clean_up_tokenization_spaces=True)
+    text = text[: text.find(generation_config.stop_token) if generation_config.stop_token else None]
+
+    #print(text)
+
+    return text
+
+
 if __name__ == "__main__":
-    main()
+    #main()
+    generation_config_file = "/home/rohola/codes/topical_language_generation/configs/generation_config.json"
+    generation_config = GenerationConfig.from_json_file(generation_config_file)
+    text = generate_unconditional_text(prompt_text="the issue is",
+                                       generation_config=generation_config)
+
+    print(text)

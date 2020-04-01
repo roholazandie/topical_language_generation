@@ -861,7 +861,7 @@ class PreTrainedModel(nn.Module):
             total_logit = logits + gamma * logscores
 
             #total_logit[total_logit == -float("Inf")] = -1e10
-            #total_probs = sparsemax(total_logit, dim=-1)
+            total_probs = sparsemax(total_logit, dim=-1)
             ###
 
             ##entmax
@@ -874,7 +874,7 @@ class PreTrainedModel(nn.Module):
 
 
             #the usual softmax
-            total_probs = F.softmax(total_logit, dim=-1)
+            #total_probs = F.softmax(total_logit, dim=-1)
 
 
             if any(torch.isnan(total_probs)):

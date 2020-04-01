@@ -1,4 +1,5 @@
 from configs import LSIConfig, GenerationConfig, LDAConfig
+from run_generation import generate_unconditional_text
 from topical_generation import generate_lsi_text, generate_lda_text, pplm_text, ctrl_text
 from evaluation.metrics import Distinct
 import numpy as np
@@ -31,6 +32,10 @@ def eval_ngram(model, config, generation_config, prompt_file, out_file, topic=0)
     with open(prompt_file) as fr:
         for i, line in enumerate(fr):
             prompt_text = " ".join(line.split()[:num_prompt_words])
+            if model == "gpt2":
+                text = generate_unconditional_text(prompt_text=prompt_text,
+                                                   generation_config=generation_config)
+
             if model == "lsi":
                 text, _, _ = generate_lsi_text(prompt_text=prompt_text,
                                          selected_topic_index=topic,
@@ -93,9 +98,14 @@ def eval_ngram(model, config, generation_config, prompt_file, out_file, topic=0)
 
 if __name__ == "__main__":
     #prompt_file = "/media/rohola/data/sample_texts/films/film_reviews.txt"
-    out_file = "/home/rohola/codes/topical_language_generation/results/distngram/lda_result.txt"
+    out_file = "/home/rohola/codes/topical_language_generation/results/distngram/gpt_result.txt"
     prompt_file = "/media/data2/rohola_data/film_reviews.txt"
     #prompt_file = "/media/rohola/data/sample_texts/films/film_reviews.txt"
+
+    ##Unconditional GPT2
+    generation_config_file = "/home/rohola/codes/topical_language_generation/configs/generation_config.json"
+    generation_config = GenerationConfig.from_json_file(generation_config_file)
+
 
     ##LSI
     # lsi_config_file = "/home/rohola/codes/topical_language_generation/configs/alexa_lsi_config.json"
@@ -104,10 +114,10 @@ if __name__ == "__main__":
     # generation_config = GenerationConfig.from_json_file(generation_config_file)
 
     ##LDA
-    lda_config_file = "/home/rohola/codes/topical_language_generation/configs/alexa_lda_config.json"
-    generation_config_file = "/home/rohola/codes/topical_language_generation/configs/generation_config.json"
-    lda_config = LDAConfig.from_json_file(lda_config_file)
-    generation_config = GenerationConfig.from_json_file(generation_config_file)
+    # lda_config_file = "/home/rohola/codes/topical_language_generation/configs/alexa_lda_config.json"
+    # generation_config_file = "/home/rohola/codes/topical_language_generation/configs/generation_config.json"
+    # lda_config = LDAConfig.from_json_file(lda_config_file)
+    # generation_config = GenerationConfig.from_json_file(generation_config_file)
 
 
     ##CTRL
@@ -118,8 +128,8 @@ if __name__ == "__main__":
     # generation_config_file = "/home/rohola/codes/topical_language_generation/configs/pplm_generation_config.json"
     # generation_config = GenerationConfig.from_json_file(generation_config_file)
 
-    eval_ngram(model="lda",
-               config=lda_config,
+    eval_ngram(model="gpt2",
+               config=None,
                generation_config=generation_config,
                prompt_file=prompt_file,
                out_file=out_file,

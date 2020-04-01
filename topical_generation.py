@@ -566,19 +566,19 @@ if __name__ == "__main__":
     # print(text)
 
     ###############LSI
-    lsi_config_file = "/home/rohola/codes/topical_language_generation/configs/alexa_lsi_config.json"
-    generation_config_file = "/home/rohola/codes/topical_language_generation/configs/generation_config.json"
-    lsi_config = LSIConfig.from_json_file(lsi_config_file)
-    generation_config = GenerationConfig.from_json_file(generation_config_file)
-
-    text, _, _ = generate_lsi_text(
-                             #prompt_text="Most of the conversation was about ",
-                             prompt_text="The issue is",
-                             selected_topic_index=0,
-                             lsi_config=lsi_config,
-                             generation_config=generation_config, plot=True)
-
-    print(text)
+    # lsi_config_file = "/home/rohola/codes/topical_language_generation/configs/alexa_lsi_config.json"
+    # generation_config_file = "/home/rohola/codes/topical_language_generation/configs/generation_config.json"
+    # lsi_config = LSIConfig.from_json_file(lsi_config_file)
+    # generation_config = GenerationConfig.from_json_file(generation_config_file)
+    #
+    # text, _, _ = generate_lsi_text(
+    #                          #prompt_text="Most of the conversation was about ",
+    #                          prompt_text="The issue is",
+    #                          selected_topic_index=0,
+    #                          lsi_config=lsi_config,
+    #                          generation_config=generation_config, plot=True)
+    #
+    # print(text)
 
     #############CTRL
     # generation_config_file = "/home/rohola/codes/topical_language_generation/configs/ctrl_generation_config.json"
@@ -589,17 +589,30 @@ if __name__ == "__main__":
     #
     # print(text)
     ###############document_like
-    # lda_config_file = "/home/rohola/codes/topical_language_generation/configs/alexa_lda_config.json"
-    # generation_config_file = "/home/rohola/codes/topical_language_generation/configs/generation_config.json"
-    #
-    # config = LDAConfig.from_json_file(lda_config_file)
-    # generation_config = GenerationConfig.from_json_file(generation_config_file)
-    # text, doc = generate_document_like_text(prompt_text="This is a",
-    #                                    doc_id=320,#173,
-    #                                     lda_config=config,
-    #                                     generation_config=generation_config)
+    from evaluation.similarity_measures import bert_sentence_similarity, calculate_similarity
+    from run_generation import generate_unconditional_text
+    lda_config_file = "/home/rohola/codes/topical_language_generation/configs/alexa_lda_config.json"
+    generation_config_file = "/home/rohola/codes/topical_language_generation/configs/generation_config.json"
+
+    config = LDAConfig.from_json_file(lda_config_file)
+    generation_config = GenerationConfig.from_json_file(generation_config_file)
+    tlg_text, doc = generate_document_like_text(prompt_text="This is a",
+                                       doc_id=320,#173,
+                                        lda_config=config,
+                                        generation_config=generation_config)
+
+    gpt_text = generate_unconditional_text(prompt_text="This is a",
+                                       generation_config=generation_config)
+
+
+
     # print("original: ", doc)
     # print("generated: ", text)
+    print("doc and tlg bert", bert_sentence_similarity(doc, tlg_text))
+    print("doc and tlg nnlm", calculate_similarity(doc, tlg_text))
+
+    print("doc and gpt bert", bert_sentence_similarity(doc, gpt_text))
+    print("doc and gpt nnlm", calculate_similarity(doc, gpt_text))
 
     ################PPLM
     # import time
