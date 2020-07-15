@@ -8,7 +8,7 @@ generation_config_file = "/home/rohola/codes/topical_language_generation/configs
 config = LDAConfig.from_json_file(lda_config_file)
 generation_config = GenerationConfig.from_json_file(generation_config_file)
 
-results = open("timing_results", 'w')
+results = open("timing_results.txt", 'w')
 
 
 t1 = time.time()
@@ -52,7 +52,6 @@ print(text)
 results.write("ctrl: " + str(t2 - t1) + "\n")
 
 ################PPLM
-import time
 
 topics = ["legal", "military", "politics", "religion", "science", "space", "technology"]
 

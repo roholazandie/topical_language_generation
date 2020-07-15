@@ -550,7 +550,7 @@ def pplm_text(prompt_text, topic, generation_config):
 
 
 if __name__ == "__main__":
-    import time
+
     ##############LDA
     lda_config_file = "/home/rohola/codes/topical_language_generation/configs/alexa_lda_config.json"
     generation_config_file = "/home/rohola/codes/topical_language_generation/configs/generation_config.json"
@@ -558,16 +558,16 @@ if __name__ == "__main__":
     config = LDAConfig.from_json_file(lda_config_file)
     generation_config = GenerationConfig.from_json_file(generation_config_file)
 
-    t1 = time.time()
+
     text, _, _ = generate_lda_text(prompt_text="The issue is ",
                                    selected_topic_index=-1,
                                    lda_config=config,
                                    generation_config=generation_config,
                                    plot=False
                                    )
-    t2 = time.time()
+
     print(text)
-    print("lda", t2 - t1)
+
 
     ###############LSI
     lsi_config_file = "/home/rohola/codes/topical_language_generation/configs/alexa_lsi_config.json"
@@ -575,27 +575,23 @@ if __name__ == "__main__":
     lsi_config = LSIConfig.from_json_file(lsi_config_file)
     generation_config = GenerationConfig.from_json_file(generation_config_file)
 
-    t1 = time.time()
+
     text, _, _ = generate_lsi_text(
                              prompt_text="The issue is",
                              selected_topic_index=0,
                              lsi_config=lsi_config,
                              generation_config=generation_config,
                              plot=False)
-    t2 = time.time()
+
     print(text)
-    print("LSI: ", t2-t1)
 
     #############CTRL
     # generation_config_file = "/home/rohola/codes/topical_language_generation/configs/ctrl_generation_config.json"
     # generation_config = GenerationConfig.from_json_file(generation_config_file)
-    # t1 = time.time()
     # text = ctrl_text(prompt_text="the issue is that",
     #           topic="Politics",
     #           generation_config=generation_config)
-    # t2 = time.time()
     # print(text)
-    # print("CTRL time:", t2-t1)
     ###############document_like
     # from evaluation.similarity_measures import bert_sentence_similarity, calculate_similarity
     # from run_generation import generate_unconditional_text
@@ -623,17 +619,16 @@ if __name__ == "__main__":
     # print("doc and gpt nnlm", calculate_similarity(doc, gpt_text))
 
     ################PPLM
-    import time
+
 
     topics = ["legal", "military", "politics", "religion", "science", "space", "technology"]
 
     generation_config_file = "/home/rohola/codes/topical_language_generation/configs/pplm_generation_config.json"
     generation_config = GenerationConfig.from_json_file(generation_config_file)
 
-    t1 = time.time()
     text = pplm_text(prompt_text="The issue is",
                 topic=topics[2],
                 generation_config=generation_config)
-    t2 = time.time()
+
     print(text)
-    print(t2-t1)
+
