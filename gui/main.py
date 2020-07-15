@@ -34,7 +34,7 @@ session_state = get(dataset="",
                     i="",
                     )
 
-st.title("Topical Language Generation")
+st.title("Topical Language Generation (TLG)")
 
 st.sidebar.title("Topical Settings:")
 dataset_name = st.sidebar.selectbox("Select Dataset:", ["Alexa Topical",
@@ -126,7 +126,7 @@ if selected_topic:
     image_file = 'cloud.png'
     word_cloud(frequencies=topic_words[session_state.i], file_output=image_file)
     cloud_image = Image.open(image_file)
-    st.image(cloud_image, caption='Cloud Word', use_column_width=True)
+    st.image(cloud_image, caption='Word Cloud', use_column_width=True)
 
 prompt = st.text_input("Start writing here: ", "The issue is")
 

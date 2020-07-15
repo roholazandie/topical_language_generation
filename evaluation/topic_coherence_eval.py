@@ -53,8 +53,8 @@ def eval_topic_coherence(model, config, generation_config, prompt_file, out_file
         file_writer.write(str(coherences) + "\n")
         file_writer.write("mean coherence: " + str(np.mean(coherences)) + "\n")
 
-    print(coherences)
-    print("mean coherence: ", np.mean(coherences))
+    #print(coherences)
+    print("mean coherence: ", np.mean(coherences), np.std(coherences))
 
 
 if __name__ == "__main__":
@@ -78,7 +78,7 @@ if __name__ == "__main__":
     prompt_file = "/media/data2/rohola_data/film_reviews.txt"
     out_file = "/home/rohola/codes/topical_language_generation/results/topic_coherence/topic_coherence_gpt2_sparsemax.txt"
 
-    eval_topic_coherence(model="gpt2",
+    eval_topic_coherence(model="pplm",
                          config=lda_config,
                          generation_config=generation_config,
                          prompt_file=prompt_file,

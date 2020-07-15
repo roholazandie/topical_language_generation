@@ -19,8 +19,8 @@ def similarity_measure(config, generation_config, num_docs):
                                            generation_config=generation_config)
 
     for doc_id in range(num_docs):
-        # if doc_id > 10:
-        #     break
+        if doc_id > 100:
+            break
 
         tlg_text, doc = generate_document_like_text(prompt_text="This is a",
                                                     doc_id=doc_id,
@@ -30,13 +30,13 @@ def similarity_measure(config, generation_config, num_docs):
         nnlm_tlg_similarities.append(text_similarity.nnlm_sentence_similarity(tlg_text, doc))
         nnlm_gpt_similarities.append(text_similarity.nnlm_sentence_similarity(gpt_text, doc))
 
-        bert_tlg_similarities.append(text_similarity.bert_sentence_similarity(tlg_text, doc))
-        bert_gpt_similarities.append(text_similarity.bert_sentence_similarity(gpt_text, doc))
+        # bert_tlg_similarities.append(text_similarity.bert_sentence_similarity(tlg_text, doc))
+        # bert_gpt_similarities.append(text_similarity.bert_sentence_similarity(gpt_text, doc))
 
     print("nnlm_tlg_similarities", np.mean(nnlm_tlg_similarities), np.std(nnlm_tlg_similarities))
     print("nnlm_gpt_similarities", np.mean(nnlm_gpt_similarities), np.std(nnlm_gpt_similarities))
-    print("bert_tlg_similarities", np.mean(bert_tlg_similarities), np.std(bert_tlg_similarities))
-    print("bert_gpt_similarities", np.mean(bert_gpt_similarities), np.std(bert_gpt_similarities))
+    # print("bert_tlg_similarities", np.mean(bert_tlg_similarities), np.std(bert_tlg_similarities))
+    # print("bert_gpt_similarities", np.mean(bert_gpt_similarities), np.std(bert_gpt_similarities))
 
 
 if __name__ == "__main__":
@@ -46,7 +46,8 @@ if __name__ == "__main__":
     config = LDAConfig.from_json_file(lda_config_file)
     generation_config = GenerationConfig.from_json_file(generation_config_file)
 
-    lda_model = LDAModel(config)
+    lda_model = LDAModel(config, False)
     theta = lda_model.get_theta_matrix()
     num_docs = theta.shape[0]
+    print(num_docs)
     similarity_measure(config, generation_config, num_docs)

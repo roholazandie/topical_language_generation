@@ -10,7 +10,7 @@ class TextSimilarity:
         module_url = "https://tfhub.dev/google/nnlm-en-dim128/2"
         self.embed = hub.KerasLayer(module_url)
 
-        self.model =  SentenceTransformer('bert-base-nli-mean-tokens')
+        #self.model = SentenceTransformer('bert-base-nli-mean-tokens')
 
     def nnlm_sentence_similarity(self, sent1, sent2):
         embeddings = self.embed([sent1, sent2])
@@ -41,7 +41,7 @@ if __name__ == "__main__":
     print(s2)
 
     print("###")
-    s1 = text_similarity.bert_sentence_similarity(sent1, sent2)
-    s2 = text_similarity.bert_sentence_similarity(sent1, sent3)
-    print(s1)
-    print(s2)
+    # s1 = text_similarity.bert_sentence_similarity(sent1, sent2)
+    # s2 = text_similarity.bert_sentence_similarity(sent1, sent3)
+    # print(s1)
+    # print(s2)
