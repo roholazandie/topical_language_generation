@@ -849,7 +849,7 @@ class PreTrainedModel(nn.Module):
 
             #logscores[logscores == -float("Inf")] = 0
             logscores[indices] = logits[indices].double()
-            if all(logscores.numpy() == -float("inf")):
+            if all(logscores.cpu().numpy() == -float("inf")):
                 #print("no logscore")
                 logscores = 0
             else:
@@ -997,7 +997,11 @@ class PreTrainedModel(nn.Module):
 
             # we should choose topics randomly with theta
             #print(selected_topic_index)
-            topic_probs = torch.tensor(psi[selected_topic_index, :])
+            if config.no_cuda:
+                topic_probs = torch.tensor(psi[selected_topic_index, :])
+            else:
+                topic_probs = torch.tensor(psi[selected_topic_index, :]).cuda()
+
             total_probs = self.fusion(next_token_logits.squeeze(0),
                                       topic_probs,
                                       config)
@@ -1135,7 +1139,11 @@ class PreTrainedModel(nn.Module):
             ########################
 
             # we should choose topics randomly with theta
-            topic_probs = torch.tensor(np.abs(topic_word_matrix[selected_topic_index, :]))  # zero'th topic
+            if config.no_cuda:
+                topic_probs = torch.tensor(np.abs(topic_word_matrix[selected_topic_index, :]))
+            else:
+                topic_probs = torch.tensor(np.abs(topic_word_matrix[selected_topic_index, :])).cuda()
+
             total_probs = self.fusion(next_token_logits.squeeze(0),
                                       topic_probs,
                                       config)

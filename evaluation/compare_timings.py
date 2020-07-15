@@ -1,15 +1,28 @@
 import time
 from configs import LDAConfig, GenerationConfig, LSIConfig
+from run_generation import generate_unconditional_text
 from topical_generation import generate_lda_text, generate_lsi_text, pplm_text, ctrl_text
+
+
+results = open("timing_results.txt", 'w')
+
+generation_config_file = "/home/rohola/codes/topical_language_generation/configs/generation_config.json"
+generation_config = GenerationConfig.from_json_file(generation_config_file)
+t1 = time.time()
+text = generate_unconditional_text(prompt_text="the issue is",
+                                   generation_config=generation_config)
+t2 = time.time()
+print(text)
+
+results.write("gpt: " + str(t2 - t1) + "\n")
+
+
 
 lda_config_file = "/home/rohola/codes/topical_language_generation/configs/alexa_lda_config.json"
 generation_config_file = "/home/rohola/codes/topical_language_generation/configs/generation_config.json"
 
 config = LDAConfig.from_json_file(lda_config_file)
 generation_config = GenerationConfig.from_json_file(generation_config_file)
-
-results = open("timing_results.txt", 'w')
-
 
 t1 = time.time()
 text, _, _ = generate_lda_text(prompt_text="The issue is ",
@@ -40,16 +53,16 @@ print(text)
 print("LSI: ", t2 -t1)
 results.write("lsi: " + str(t2 - t1) + "\n")
 #############CTRL
-generation_config_file = "/home/rohola/codes/topical_language_generation/configs/ctrl_generation_config.json"
-generation_config = GenerationConfig.from_json_file(generation_config_file)
-t1 = time.time()
-text = ctrl_text(prompt_text="the issue is that",
-          topic="Politics",
-          generation_config=generation_config)
-t2 = time.time()
-print(text)
-#print("CTRL time:", t2-t1)
-results.write("ctrl: " + str(t2 - t1) + "\n")
+# generation_config_file = "/home/rohola/codes/topical_language_generation/configs/ctrl_generation_config.json"
+# generation_config = GenerationConfig.from_json_file(generation_config_file)
+# t1 = time.time()
+# text = ctrl_text(prompt_text="the issue is that",
+#           topic="Politics",
+#           generation_config=generation_config)
+# t2 = time.time()
+# print(text)
+# #print("CTRL time:", t2-t1)
+# results.write("ctrl: " + str(t2 - t1) + "\n")
 
 ################PPLM
 
