@@ -53,16 +53,16 @@ print(text)
 print("LSI: ", t2 -t1)
 results.write("lsi: " + str(t2 - t1) + "\n")
 #############CTRL
-# generation_config_file = "/home/rohola/codes/topical_language_generation/configs/ctrl_generation_config.json"
-# generation_config = GenerationConfig.from_json_file(generation_config_file)
-# t1 = time.time()
-# text = ctrl_text(prompt_text="the issue is that",
-#           topic="Politics",
-#           generation_config=generation_config)
-# t2 = time.time()
-# print(text)
-# #print("CTRL time:", t2-t1)
-# results.write("ctrl: " + str(t2 - t1) + "\n")
+generation_config_file = "/home/rohola/codes/topical_language_generation/configs/ctrl_generation_config.json"
+generation_config = GenerationConfig.from_json_file(generation_config_file)
+t1 = time.time()
+text = ctrl_text(prompt_text="the issue is that",
+          topic="Politics",
+          generation_config=generation_config)
+t2 = time.time()
+print(text)
+#print("CTRL time:", t2-t1)
+results.write("ctrl: " + str(t2 - t1) + "\n")
 
 ################PPLM
 
