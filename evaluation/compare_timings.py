@@ -12,7 +12,7 @@ lsi_times = []
 ctrl_times = []
 pplm_times = []
 
-for length in [10, 50, 100, 150, 200, 250, 300]:
+for length in [10, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 800]:
 
 
     generation_config_file = "/home/rohola/codes/topical_language_generation/configs/generation_config.json"
@@ -99,4 +99,4 @@ results.close()
 
 with open("tresult.txt", 'w') as fw:
     for g, ld, ls, ctr, ppl in zip(gpt_times, lda_times, lsi_times, ctrl_times, pplm_times):
-        fw.write(str(g[0])+'\t'+str(g[1])+'\t'+str(ld[1])+'\t'+str(ls[1])+'\t'+str(ctr[1])+'\t'+str(ppl[1])+'\n' )
+        fw.write(str(g[0])+','+str(g[1])+','+str(ld[1])+','+str(ls[1])+','+str(ctr[1])+','+str(ppl[1])+'\n' )
