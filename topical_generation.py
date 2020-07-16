@@ -586,12 +586,16 @@ if __name__ == "__main__":
     # print(text)
 
     #############CTRL
+    import time
+    t1 = time.time()
     generation_config_file = "/home/rohola/codes/topical_language_generation/configs/ctrl_generation_config.json"
     generation_config = GenerationConfig.from_json_file(generation_config_file)
     text = ctrl_text(prompt_text="the issue is that",
               topic="Politics",
               generation_config=generation_config)
-    print(text)
+    t2 = time.time()
+    print("ctrl: ", t2-t1)
+    #print(text)
     ###############document_like
     # from evaluation.similarity_measures import bert_sentence_similarity, calculate_similarity
     # from run_generation import generate_unconditional_text
