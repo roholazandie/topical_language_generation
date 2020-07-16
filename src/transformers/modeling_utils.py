@@ -1401,8 +1401,8 @@ class PreTrainedModel(nn.Module):
             cur_len = cur_len + 1
 
             # stop when there is a </s> in each sentence, or if we exceed the maximul length
-            if unfinished_sents.max() == 0:
-                break
+            # if unfinished_sents.max() == 0:
+            #     break
 
         # add eos_token_ids to unfinished sentences
         if cur_len == max_length:
