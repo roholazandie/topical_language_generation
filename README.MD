@@ -19,6 +19,20 @@ pip install -r requirements
  sudo apt-get install graphviz libgraphviz-dev pkg-config
 ```
 
+## Usage
+
+### Training the LDA and LSI models:
+```python
+python lda_model.py
+```
+```python
+python lsi_model.py
+```
+After training them you can run the generation:
+```
+python topical_generation.py
+```
+
 ## Samples:
 
 for LDA with different prompts (bold face texts are prompts):
