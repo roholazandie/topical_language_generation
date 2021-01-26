@@ -35,7 +35,7 @@ python topical_generation.py
 
 ## Samples:
 
-for LDA with different prompts (bold face texts are prompts):
+for LDA with different prompts (bold face texts are prompts) with topic football:
 
 ---
 **He started** playing football at 16 when he was 12,  North America Football Conference team president Brady Bowler said.
@@ -72,6 +72,9 @@ And more prompts with very different words:
 
 
 ## Very long text generation
+
+With topic "communication"
+
 ---
 **The issue** was raised by a group of students at three universities in the United States, including Harvard University.
  (Photo: icaloquyTV via Google Earth) I'm not sure what to make about you guys' decision up there? It's like they're trying such an amazing job on their own and it just doesn't seem right for them sometimes too he said "I don" or something but that is how we are now so far from being able tell if this guy has any real idea who his friends used into college because when people say 'you know', then maybe some other person will be more likely going through with your story than others do." ("You Donned Your T-Shirt To Be A Student," The New York Times), May 12
