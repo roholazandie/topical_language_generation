@@ -577,8 +577,8 @@ if __name__ == "__main__":
 
 
     text, _, _ = generate_lsi_text(
-                             prompt_text="The conference on ",
-                             selected_topic_index=0,#4
+                             prompt_text="The issue was",
+                             selected_topic_index=4,#4
                              lsi_config=lsi_config,
                              generation_config=generation_config,
                              plot=False)
