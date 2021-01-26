@@ -24,7 +24,7 @@ pip install -r requirements
 for LDA with different prompts (bold face texts are prompts):
 
 ---
-**He started** playing football at 16 when he was 12," North America Football Conference team president Brady Bowler said.
+**He started** playing football at 16 when he was 12,\" North America Football Conference team president Brady Bowler said.
 , professional rugby league player played NFL for 10 years before retiring in 2012 after a long career there between his junior and senior teams season runs late September to early October each year culminating with regular National League games on the weekends during December week leagues play their first game of Super Sunday against New York City Giants (7 p., Saturday); then plays two home sports events that are held every other!
 ---
 
@@ -51,7 +51,7 @@ And more prompts with very different words:
 
 ---
 **her hair** was a bit of an issue.
-"I'm not sure if it's because he didn't want her to be with him or something," North America director Michael Green said when asked about Sunday night football games in the United States after his wife, who is also from New York City sports professional Football National League team rugby league teams NFL and MLB are playing at their home stadium on Saturday nights for fans attending Super Bowl 50 festivities this weekend season between now and then each year as part "
+\"I'm not sure if it's because he didn't want her to be with him or something,\" North America director Michael Green said when asked about Sunday night football games in the United States after his wife, who is also from New York City sports professional Football National League team rugby league teams NFL and MLB are playing at their home stadium on Saturday nights for fans attending Super Bowl 50 festivities this weekend season between now and then each year as part \"
 ---
 
 
@@ -71,7 +71,7 @@ here are more detailed examples:
 ```json
 {
     "model": "gpt",
-    "topic": 0,
+    "topic": "football",
     "gamma": 4,
     "LOGIT_THRESHOLD": -95,
     "repetition_penalty": 1.2,
@@ -82,7 +82,7 @@ here are more detailed examples:
 ```json
 {
     "model" : "gpt2",
-    "topic": -1,
+    "topic": "football",
     "gamma": 100,
     "LOGIT_THRESHOLD": -90,
     "repetition_penalty": 1.2,
@@ -94,7 +94,7 @@ here are more detailed examples:
 ```json
 {
     "model" : "gpt2",
-    "topic": -1,
+    "topic": "transportation",
     "gamma": 5,
     "LOGIT_THRESHOLD": -95,
     "repetition_penalty": 1.2,
