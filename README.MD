@@ -70,7 +70,35 @@ here are more detailed examples:
 
 ```json
 {
-    "model": "gpt2",
-    "this": "dsfsd"
+    "model": "gpt",
+    "topic": 0,
+    "gamma": 4,
+    "LOGIT_THRESHOLD": -95,
+    "repetition_penalty": 1.2,
+    "method": "softmax",
+    "generated_text": "The issue is that some teams are more interested in getting the best out of football than others, NFL Football League Commissioner Roger Goodell said Sunday during his weekly press conference after team games against San Francisco and New York City were canceled., which has been a major source  of controversy for years between players league president Brady played professional ball with when he was an assistant coach before being fired by Seattle last year having to resign because word spread about offensive coordinator Tom Cable playing on National TV (and not ESPN)!"
+}
+```
+```json
+{
+    "model" : "gpt2",
+    "topic": -1,
+    "gamma": 100,
+    "LOGIT_THRESHOLD": -90,
+    "repetition_penalty": 1.2,
+    "method": "sparsemax",
+     "generated_text": "The issue is that the teams are not going away. \"We're still in each team.\" Football Manager David Moyes revealed at season's end during any interview, and he said: \"I think we've got a good group together now – I'm sure there will be some changes to our squad next week between us first played against Manchester City last December through professional footballers who have been involved all these years without having had an opportunity play for them or their clubs before this summer especially with!"
+}
+```
+
+```json
+{
+    "model" : "gpt2",
+    "topic": -1,
+    "gamma": 5,
+    "LOGIT_THRESHOLD": -95,
+    "repetition_penalty": 1.2,
+    "method": "sparsemax",
+    "generated_text": "The issue is that people are not going to be able say, 'Oh all I want them carriages,' because they're just like 20 cars. 'They don't have a lot of space.' Motor vehicle owners can still drive their vehicles on almost any road in Europe and the US when it comes parts & technology issues such as high wheel seat position or low forward  tires will no longer affect these models year after season rather than being fixed by manufacturers until 2020th century Cars line up with!"
 }
 ```
