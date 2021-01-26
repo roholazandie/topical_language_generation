@@ -20,8 +20,8 @@ with open("results/timings.txt") as fr:
 with plt.style.context('seaborn'):
     #fig = plot_figure(style_label=style_label)
     plt.plot(times, gpt_times, label='GPT2 (Uncoditional)')
-    plt.plot(times, lda_times, label='LDA+TLG')
-    plt.plot(times, lsi_times, label='LSI+TLG')
+    plt.plot(times, lda_times, label='TLG + LDA')
+    plt.plot(times, lsi_times, label='TLG + LSI')
     plt.plot(times, ctrl_times, label='CTRL')
     plt.plot(times, pplm_times, label='PPLM')
     plt.xlabel("Number of Generated Tokens")

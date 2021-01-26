@@ -1,7 +1,7 @@
 import tensorflow as tf
 import tensorflow_hub as hub
 import numpy as np
-from sentence_transformers import SentenceTransformer
+#from sentence_transformers import SentenceTransformer
 
 
 class TextSimilarity:

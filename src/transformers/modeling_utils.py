@@ -1062,7 +1062,7 @@ class PreTrainedModel(nn.Module):
 
             # stop when there is a </s> in each sentence, or if we exceed the maximul length
             if unfinished_sents.max() == 0:
-                break
+               break
 
         # add eos_token_ids to unfinished sentences
         if cur_len == config.max_length:

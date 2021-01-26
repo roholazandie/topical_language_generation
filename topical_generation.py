@@ -250,8 +250,8 @@ def generate_lda_text(prompt_text, selected_topic_index, lda_config, generation_
     model = model_class.from_pretrained(generation_config.model_name_or_path)
     model.to(generation_config.device)
 
-    generation_config.max_length = adjust_length_to_model(generation_config.max_length,
-                                                          max_sequence_length=model.config.max_position_embeddings)
+    # generation_config.max_length = adjust_length_to_model(generation_config.max_length,
+    #                                                       max_sequence_length=model.config.max_position_embeddings)
     logger.info(generation_config)
 
     # Different models need different input formatting and/or extra arguments
@@ -341,7 +341,7 @@ def generate_lsi_text(prompt_text, selected_topic_index, lsi_config, generation_
         generation_config=generation_config,
         topic_word_matrix=topic_word_matrix,
         selected_topic_index=selected_topic_index,
-        tokenizer=None#lsi_model.tokenizer,
+        tokenizer=lsi_model.tokenizer,
     )
 
     generated_sequence = output_sequences[0].tolist()
@@ -559,8 +559,8 @@ if __name__ == "__main__":
     # generation_config = GenerationConfig.from_json_file(generation_config_file)
     #
     #
-    # text, _, _ = generate_lda_text(prompt_text="The issue is ",
-    #                                selected_topic_index=-1,
+    # text, _, _ = generate_lda_text(prompt_text="He goes to ",
+    #                                selected_topic_index=-2,
     #                                lda_config=config,
     #                                generation_config=generation_config,
     #                                plot=False
@@ -570,35 +570,34 @@ if __name__ == "__main__":
 
 
     ###############LSI
-    # lsi_config_file = "/home/rohola/codes/topical_language_generation/configs/alexa_lsi_config.json"
-    # generation_config_file = "/home/rohola/codes/topical_language_generation/configs/generation_config.json"
-    # lsi_config = LSIConfig.from_json_file(lsi_config_file)
-    # generation_config = GenerationConfig.from_json_file(generation_config_file)
-    #
-    #
-    # text, _, _ = generate_lsi_text(
-    #                          prompt_text="The issue is",
-    #                          selected_topic_index=0,
-    #                          lsi_config=lsi_config,
-    #                          generation_config=generation_config,
-    #                          plot=False)
-    #
-    # print(text)
+    lsi_config_file = "/home/rohola/codes/topical_language_generation/configs/alexa_lsi_config.json"
+    generation_config_file = "/home/rohola/codes/topical_language_generation/configs/generation_config.json"
+    lsi_config = LSIConfig.from_json_file(lsi_config_file)
+    generation_config = GenerationConfig.from_json_file(generation_config_file)
+
+
+    text, _, _ = generate_lsi_text(
+                             prompt_text="The conference on ",
+                             selected_topic_index=0,#4
+                             lsi_config=lsi_config,
+                             generation_config=generation_config,
+                             plot=False)
+
+    print(text)
 
     #############CTRL
-    import time
-    t1 = time.time()
-    generation_config_file = "/home/rohola/codes/topical_language_generation/configs/ctrl_generation_config.json"
-    generation_config = GenerationConfig.from_json_file(generation_config_file)
-    text = ctrl_text(prompt_text="the issue is that",
-              topic="Politics",
-              generation_config=generation_config)
-    t2 = time.time()
-    print("ctrl: ", t2-t1)
+    # import time
+    # t1 = time.time()
+    # generation_config_file = "/home/rohola/codes/topical_language_generation/configs/ctrl_generation_config.json"
+    # generation_config = GenerationConfig.from_json_file(generation_config_file)
+    # text = ctrl_text(prompt_text="the issue is that",
+    #           topic="Politics",
+    #           generation_config=generation_config)
+    # t2 = time.time()
+    # print("ctrl: ", t2-t1)
     #print(text)
     ###############document_like
-    # from evaluation.similarity_measures import bert_sentence_similarity, calculate_similarity
-    # from run_generation import generate_unconditional_text
+    from run_generation import generate_unconditional_text
     # lda_config_file = "/home/rohola/codes/topical_language_generation/configs/alexa_lda_config.json"
     # generation_config_file = "/home/rohola/codes/topical_language_generation/configs/generation_config.json"
     #
@@ -609,11 +608,11 @@ if __name__ == "__main__":
     #                                     lda_config=config,
     #                                     generation_config=generation_config)
     #
-    # gpt_text = generate_unconditional_text(prompt_text="This is a",
-    #                                    generation_config=generation_config)
-
-
-
+    # # gpt_text = generate_unconditional_text(prompt_text="This is a",
+    # #                                    generation_config=generation_config)
+    #
+    #
+    # print(tlg_text)
     # print("original: ", doc)
     # print("generated: ", text)
     # print("doc and tlg bert", bert_sentence_similarity(doc, tlg_text))

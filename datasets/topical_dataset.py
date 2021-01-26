@@ -76,6 +76,7 @@ if __name__ == "__main__":
     cached_dir = "/home/rohola/cached_models"
     tokenizer = TransformerGPT2Tokenizer(cached_dir)
     topical_dataset = TopicalDataset(dirname, tokenizer, do_tokenize=False)
+    x = [d for d in topical_dataset]
     j = 1500
     for i, data in enumerate(topical_dataset):
         if i == j:
