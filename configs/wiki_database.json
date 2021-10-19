@@ -1,0 +1,5 @@
+{
+  "database_name": "wikipedia",
+  "collection_name": "article",
+  "dataset_dir": "/media/rohola/data/clean_wiki_text_json"
+}

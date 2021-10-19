@@ -1,0 +1,16 @@
+{
+  "name": "congress",
+  "dataset_dir": "/media/rohola/data/sample_texts/views/",
+  "cached_dir": "/home/rohola/codes/topical_language_generation/caches/congress_lsi_caches",
+  "no_below": 70,
+  "no_above": 0.15,
+  "dict_dir": "",
+  "topics_file": "",
+  "topic_top_words_file": "",
+  "tokenizer": "gpt",
+  "num_topics": 10,
+  "chunksize": 200,
+  "passes": 20,
+  "iterations": 400,
+  "eval_every": null
+}

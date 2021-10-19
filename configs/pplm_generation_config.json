@@ -1,0 +1,18 @@
+{
+  "model_type": "gpt2-medium",
+  "model_name_or_path": "gpt2-medium",
+  "cached_dir": "/home/rohola/cached_models",
+  "padding_text": "",
+  "max_length": 99,
+  "temperature": 1.0,
+  "repetition_penalty": 1.2,
+  "top_k": 0,
+  "top_p": 0.9,
+  "fusion_method": "method3",
+  "logit_threshold": -80.0,
+  "gamma": 1.0,
+  "no_cuda": true,
+  "seed": 41,
+  "stop_token": "",
+  "num_beams": 1
+}

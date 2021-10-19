@@ -1,0 +1,1 @@
+{"model_type": "gpt2", "model_name_or_path": "gpt2", "cached_dir": "/home/rohola/cached_models", "padding_text": "", "length": 50, "temperature": 1.0, "repetition_penalty": 1.0, "top_k": 0, "top_p": 0.9, "fusion_method": "method3", "logit_threshold": -100.0, "gamma": 5.0, "no_cuda": true, "seed": 42, "stop_token": ""}

@@ -1,0 +1,16 @@
+{
+  "name": "nytimes",
+  "dataset_dir": "/media/rohola/data/newyork_articles/",
+  "cached_dir": "/home/rohola/codes/topical_language_generation/caches/nytimes_lsi_caches",
+  "dict_dir": "/home/rohola/cached_models/dict.p",
+  "topics_file": "/home/rohola/codes/topical_language_generation/results/lsi/alexa_topics_file.npy",
+  "topic_top_words_file": "/home/rohola/codes/topical_language_generation/results/lsi/alexa_top_words.p",
+  "no_below": 20,
+  "no_above": 0.2,
+  "tokenizer": "gpt",
+  "num_topics": 10,
+  "chunksize": 200,
+  "passes": 20,
+  "iterations": 400,
+  "eval_every": null
+}

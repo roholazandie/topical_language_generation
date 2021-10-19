@@ -1,0 +1,18 @@
+{
+  "model_type": "ctrl",
+  "model_name_or_path": "ctrl",
+  "cached_dir": "/home/rohola/cached_models",
+  "padding_text": "",
+  "max_length": 500,
+  "temperature": 0.2,
+  "repetition_penalty": 1.2,
+  "top_k": 0,
+  "top_p": 0.9,
+  "fusion_method": "",
+  "logit_threshold": "",
+  "gamma": "",
+  "no_cuda": false,
+  "seed": 42,
+  "stop_token": "",
+  "num_beams": 1
+}

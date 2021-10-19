@@ -1,0 +1,16 @@
+{
+  "name": "newsgroup",
+  "dataset_dir": "",
+  "cached_dir": "/home/rohola/codes/topical_language_generation/caches/newsgroup_lsi_caches",
+  "dict_dir": "",
+  "topics_file": "",
+  "topic_top_words_file": "",
+  "no_below": 20,
+  "no_above": 0.3,
+  "tokenizer": "gpt",
+  "num_topics": 10,
+  "chunksize": 200,
+  "passes": 20,
+  "iterations": 400,
+  "eval_every": null
+}

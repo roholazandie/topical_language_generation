@@ -77,8 +77,13 @@ if __name__ == "__main__":
     tokenizer = TransformerGPT2Tokenizer(cached_dir)
     topical_dataset = TopicalDataset(dirname, tokenizer, do_tokenize=False)
     x = [d for d in topical_dataset]
-    j = 1500
-    for i, data in enumerate(topical_dataset):
-        if i == j:
-            print(data)
-            break
+
+    with open("alexa.txt", 'w') as fw:
+        for d in topical_dataset:
+            fw.write(d.rstrip() + "\n")
+
+    # j = 1500
+    # for i, data in enumerate(topical_dataset):
+    #     if i == j:
+    #         print(data)
+    #         break

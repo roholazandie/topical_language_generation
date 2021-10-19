@@ -154,7 +154,6 @@ raw_wikipedia/
 *.npy
 *.p
 
-configs/*
 results/*
 caches/*
 wandb/*

@@ -1,0 +1,15 @@
+program: lda_parameter_tuning.py
+method: grid
+metric:
+  goal: maximize
+  name: coherence
+parameters:
+  num_topics:
+    values: [5, 8, 10, 12, 15, 20]
+  alpha:
+    values: [0.0001, 0.001, 0.01, 0.1]
+  no_below:
+    values: [20, 50, 100]
+  no_above:
+    values: [0.25, 0.30, 0.4]
+

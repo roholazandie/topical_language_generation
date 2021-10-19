@@ -1,0 +1,12 @@
+{
+  "dataset_dir": "/media/rohola/data/clean_wiki_text_json",
+  "cached_dir": "/media/rohola/data/wiki_topical/lsi_out/wiki_caches",
+  "topics_file": "/home/rohola/codes/topical_language_generation/results/wiki/wiki_topics_file.npy",
+  "topic_top_words_file": "/home/rohola/codes/topical_language_generation/results/wiki/wiki_top_words.p",
+  "tokenizer": "gpt",
+  "num_topics": 30,
+  "chunksize": 200,
+  "passes": 5,
+  "iterations": 400,
+  "eval_every": null
+}

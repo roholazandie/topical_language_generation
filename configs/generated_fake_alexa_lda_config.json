@@ -1,0 +1,15 @@
+{
+  "name": "congress",
+  "dataset_dir": "/home/rohola/codes/topical_language_generation/caches/generated_fake_text_network_caches/text",
+  "cached_dir": "/home/rohola/codes/topical_language_generation/caches/generated_fake_text_network_caches/",
+  "no_below": 10,
+  "no_above": 0.3,
+  "tokenizer": "gpt",
+  "alpha": 0.01,
+  "eta": "auto",
+  "num_topics": 10,
+  "chunksize": 200,
+  "passes": 20,
+  "iterations": 400,
+  "eval_every": null
+}

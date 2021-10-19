@@ -1,0 +1,15 @@
+{
+  "name": "alexa",
+  "dataset_dir": "/media/rohola/data/dialog_systems/alexa_prize_topical_chat_dataset/reading_sets",
+  "cached_dir": "/home/rohola/codes/topical_language_generation/caches/alexa_lda_caches",
+  "no_below": 20,
+  "no_above": 0.1,
+  "tokenizer": "gpt",
+  "alpha": 0.1,
+  "eta": "auto",
+  "num_topics": 8,
+  "chunksize": 200,
+  "passes": 20,
+  "iterations": 600,
+  "eval_every": null
+}

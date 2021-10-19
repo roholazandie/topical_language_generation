@@ -1,0 +1,16 @@
+{
+  "name": "anes",
+  "dataset_dir": "/media/rohola/data/ANES-elfardy-mdiab-ccb-dataset/SEM-Split/",
+  "cached_dir": "/home/rohola/codes/topical_language_generation/caches/anes_lsi_caches",
+  "dict_dir": "",
+  "topics_file": "",
+  "topic_top_words_file": "",
+  "tokenizer": "gpt",
+  "no_below": 20,
+  "no_above": 0.1,
+  "num_topics": 10,
+  "chunksize": 200,
+  "passes": 20,
+  "iterations": 400,
+  "eval_every": null
+}

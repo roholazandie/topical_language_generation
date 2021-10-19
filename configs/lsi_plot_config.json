@@ -1,0 +1,8 @@
+{
+  "dimension": 2,
+  "threshold": 0.001,
+  "node_size": 30,
+  "color_scale": "Viridis",
+  "title": "LSI",
+  "out_file_name": "/home/rohola/codes/topical_language_generation/caches/lsi_viz.html"
+}
