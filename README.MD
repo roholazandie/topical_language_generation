@@ -18,6 +18,9 @@ pip install -r requirements
 ```
  sudo apt-get install graphviz libgraphviz-dev pkg-config
 ```
+## Dataset
+You can download the Alexa Prize dataset from [here](https://drive.google.com/file/d/1YeeLRt0xedS774yLCF6kgRY9y9OhRA1q/view?usp=sharing)
+
 
 ## Usage
 
