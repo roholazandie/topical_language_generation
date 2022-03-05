@@ -126,6 +126,12 @@ here are more detailed examples:
 ```
 
 ## Citation:
-will be added
 ```
+@article{zandie2021topical,
+  title={Topical language generation using transformers},
+  author={Zandie, Rohola and Mahoor, Mohammad H},
+  journal={arXiv preprint arXiv:2103.06434},
+  year={2021}
+}
+
 ```
