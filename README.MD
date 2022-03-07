@@ -1,10 +1,11 @@
-## Topical Langauge generation (TLG)
+## [Topical Langauge generation (TLG)](https://arxiv.org/abs/2103.06434)
 ![alt text](img/gui1.png)
 
 ### Overview:
 topical language generation is the task of incorporating topic information from topic modeling (LSI, LDA, etc) to the language generation.
 In this repository we have TLG with transformers. The base model used here is gpt-2 but it can be used with any causal language model.
 
+You can find the paper (here)[https://arxiv.org/abs/2103.06434]
 
 ## Installation
 - Python 3.6+ 
