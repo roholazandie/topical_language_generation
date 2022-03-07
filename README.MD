@@ -127,11 +127,13 @@ here are more detailed examples:
 
 ## Citation:
 ```
-@article{zandie2021topical,
-  title={Topical language generation using transformers},
-  author={Zandie, Rohola and Mahoor, Mohammad H},
-  journal={arXiv preprint arXiv:2103.06434},
-  year={2021}
+@article{zandie_mahoor_2022, 
+    title={Topical language generation using transformers},
+    DOI={10.1017/S1351324922000031},
+    journal={Natural Language Engineering},
+    publisher={Cambridge University Press},
+    author={Zandie, Rohola and Mahoor, Mohammad H.}, 
+    year={2022}, 
+    pages={1–23}
 }
-
 ```
