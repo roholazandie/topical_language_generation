@@ -13,4 +13,4 @@ sklearn
 networkx
 plotly
 pygraphviz
-streamlit==0.52.2
+streamlit==1.37.0
